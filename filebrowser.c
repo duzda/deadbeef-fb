@@ -23,6 +23,9 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#define PLUGIN_VERSION_MAJOR    0
+#define PLUGIN_VERSION_MINOR    7
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -2276,8 +2279,8 @@ static DB_misc_t plugin = {
     .plugin.type            = DB_PLUGIN_MISC,
     .plugin.api_vmajor      = 1,
     .plugin.api_vminor      = 0,
-    .plugin.version_major   = 0,
-    .plugin.version_minor   = 6,
+    .plugin.version_major   = PLUGIN_VERSION_MAJOR,
+    .plugin.version_minor   = PLUGIN_VERSION_MINOR,
 #if GTK_CHECK_VERSION(3,0,0)
     .plugin.id              = "filebrowser-gtk3",
 #else
