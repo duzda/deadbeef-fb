@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
 
 #include <deadbeef/deadbeef.h>
 #include <deadbeef/gtkui_api.h>
@@ -40,7 +41,7 @@
 #include "utils.h"
 
 // Uncomment to enable debug messages
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #pragma message "DEBUG MODE ENABLED!"
@@ -814,8 +815,13 @@ create_sidebar (void)
     GtkTreeSelection    *selection;
 
     treeview            = create_view_and_model ();
+#if !GTK_CHECK_VERSION(3,0,0)
     sidebar_vbox        = gtk_vbox_new (FALSE, 0);
     sidebar_vbox_bars   = gtk_vbox_new (FALSE, 0);
+#else
+    sidebar_vbox        = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    sidebar_vbox_bars   = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+#endif
     selection           = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
     addressbar          = gtk_entry_new ();
     scrollwin           = gtk_scrolled_window_new (NULL, NULL);
@@ -827,27 +833,37 @@ create_sidebar (void)
     gtk_toolbar_set_icon_size (GTK_TOOLBAR (toolbar), GTK_ICON_SIZE_SMALL_TOOLBAR);
     gtk_toolbar_set_style (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_ICONS);
 
-    wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_GO_UP));
+    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_GO_UP));
+    wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
+    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-go-up");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to parent directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_up), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
 
-    wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_REFRESH));
+    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_REFRESH));
+    wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
+    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-refresh");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Refresh current directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_refresh), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
 
-    wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_GOTO_TOP));
+    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_GOTO_TOP));
+    wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
+    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-goto-top");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to top directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_root), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
 
-    wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_HOME));
+    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_HOME));
+    wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
+    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-home");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to home directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_home), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
 
-    wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_CLEAR));
+    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_CLEAR));
+    wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
+    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-clear");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to default directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_default), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
@@ -856,7 +872,9 @@ create_sidebar (void)
     gtk_tool_item_set_expand (GTK_TOOL_ITEM (wid), TRUE);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
 
-    wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_ADD));
+    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_ADD));
+    wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
+    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-add");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Add selection to current playlist"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_add_current), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
@@ -1202,14 +1220,23 @@ static gboolean
 treebrowser_checkdir (const gchar *directory)
 {
     gboolean is_dir;
+#if !GTK_CHECK_VERSION(3,0,0)
     static const GdkColor red       = { 0, 0xffff, 0xaaaa, 0xaaaa };
+#else
+    static const struct _GdkRGBA red  = { 1.0, 0.67, 0.67, 1.0 };
+#endif
     static gboolean old_value       = TRUE;
 
     is_dir = g_file_test (directory, G_FILE_TEST_IS_DIR);
 
     if (old_value != is_dir) {
+#if !GTK_CHECK_VERSION(3,0,0)
         gtk_widget_modify_base (GTK_WIDGET (addressbar),
                         GTK_STATE_NORMAL, is_dir ? NULL : &red);
+#else
+        gtk_widget_override_background_color (GTK_WIDGET (addressbar),
+                        GTK_STATE_NORMAL, is_dir ? NULL : &red);
+#endif
         old_value = is_dir;
     }
 
@@ -1934,7 +1961,11 @@ on_treeview_mousemove (GtkWidget *widget, GdkEventButton *event)
                 .info = 0
             };
             GtkTargetList *target = gtk_target_list_new (&entry, 1);
+#if !GTK_CHECK_VERSION(3,0,0)
             gtk_drag_begin (widget, target, GDK_ACTION_COPY | GDK_ACTION_MOVE, 1, (GdkEvent *)event);
+#else
+            gtk_drag_begin_with_coordinates (widget, target, GDK_ACTION_COPY | GDK_ACTION_MOVE, 1, (GdkEvent *)event, -1, -1);
+#endif
         }
     }
     /*
@@ -2089,6 +2120,8 @@ plugin_init (void)
     create_autofilter ();
     treebrowser_chroot (NULL);
     treeview_restore_expanded (NULL);
+
+    utils_construct_style (treeview, CONFIG_COLOR_BG, CONFIG_COLOR_FG, CONFIG_COLOR_BG_SEL, CONFIG_COLOR_FG_SEL);
 
     return 0;
 }
