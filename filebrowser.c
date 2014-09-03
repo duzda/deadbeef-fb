@@ -23,6 +23,10 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+// todo:
+// + path to bookmarks file
+
+
 #define PLUGIN_VERSION_MAJOR    0
 #define PLUGIN_VERSION_MINOR    72
 
@@ -92,6 +96,7 @@ static GtkWidget *          sidebar_vbox                = NULL;
 static GtkWidget *          sidebar_vbox_bars;
 static GtkWidget *          addressbar;
 static gchar *              addressbar_last_address     = NULL;
+static GtkWidget *          rootdir_combo;
 static GtkTreeIter          bookmarks_iter;
 static gboolean             bookmarks_expanded          = FALSE;
 static GtkTreeViewColumn *  treeview_column_text;
@@ -320,6 +325,7 @@ static gboolean
 treeview_update (void *ctx)
 {
     trace("update treeview\n");
+    update_rootdirs ();
     treebrowser_chroot (NULL);  // update treeview
     treeview_restore_expanded (NULL);
 
@@ -431,6 +437,9 @@ on_config_changed (uintptr_t ctx)
         }
 
         if (! utils_str_equal (coverart, CONFIG_COVERART))
+            do_update = TRUE;
+
+        if (! utils_str_equal (default_path, CONFIG_DEFAULT_PATH))
             do_update = TRUE;
     }
 
@@ -838,9 +847,11 @@ create_sidebar (void)
 #if !GTK_CHECK_VERSION(3,0,0)
     sidebar_vbox        = gtk_vbox_new (FALSE, 0);
     sidebar_vbox_bars   = gtk_vbox_new (FALSE, 0);
+    rootdir_combo       = gtk_combo_box_new_text ();
 #else
     sidebar_vbox        = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
     sidebar_vbox_bars   = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    rootdir_combo       = gtk_combo_box_text_new ();
 #endif
     selection           = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
     addressbar          = gtk_entry_new ();
@@ -903,6 +914,7 @@ create_sidebar (void)
 
     gtk_container_add(GTK_CONTAINER (scrollwin), treeview);
 
+    gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), rootdir_combo, FALSE, TRUE, 1);
     gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), addressbar, FALSE, TRUE, 1);
     gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), toolbar,  FALSE, TRUE, 1);
 
@@ -917,6 +929,7 @@ create_sidebar (void)
     g_signal_connect (treeview,     "row-collapsed",        G_CALLBACK (on_treeview_row_collapsed),         NULL);
     g_signal_connect (treeview,     "row-expanded",         G_CALLBACK (on_treeview_row_expanded),          NULL);
     g_signal_connect (addressbar,   "activate",             G_CALLBACK (on_addressbar_activate),            NULL);
+    g_signal_connect (rootdir_combo,"changed",             G_CALLBACK (on_rootdir_combo_changed),           NULL);
 
     gtk_widget_show_all (sidebar_vbox);
 }
@@ -1025,6 +1038,31 @@ add_uri_to_playlist (GList *uri_list, int index)
     deadbeef->pl_unlock ();
 }
 
+static void
+update_rootdirs ()
+{
+#if !GTK_CHECK_VERSION(3,0,0)
+    gtk_list_store_clear (GTK_LIST_STORE (gtk_combo_box_get_model (GTK_COMBO_BOX (rootdir_combo))));
+#else
+    gtk_combo_box_text_remove_all (GTK_COMBO_BOX_TEXT (rootdir_combo));
+#endif
+
+    gchar **config_rootdirs;
+    config_rootdirs = g_strsplit (deadbeef->conf_get_str_fast (CONFSTR_FB_DEFAULT_PATH,        ""), ";", 0);
+
+    for (int i = 0; i < g_strv_length(config_rootdirs); i++)
+    {
+#if !GTK_CHECK_VERSION(3,0,0)
+        gtk_combo_box_append_text (GTK_COMBO_BOX (rootdir_combo), g_strdup (config_rootdirs[i]));
+#else
+        gtk_combo_box_text_append (GTK_COMBO_BOX_TEXT (rootdir_combo), NULL, g_strdup (config_rootdirs[i]));
+#endif
+    }
+    g_strfreev (config_rootdirs);
+
+    gtk_combo_box_set_active (GTK_COMBO_BOX (rootdir_combo), 0);
+}
+
 /* Check if file is filtered (return FALSE if file is filtered and not shown) */
 static gboolean
 check_filtered (const gchar *base_name)
@@ -1087,7 +1125,11 @@ check_hidden (const gchar *filename)
 static gchar *
 get_default_dir (void)
 {
-    const gchar *path = CONFIG_DEFAULT_PATH;
+#if !GTK_CHECK_VERSION(3,0,0)
+    const gchar *path = gtk_combo_box_get_active_text (GTK_COMBO_BOX (rootdir_combo));
+#else
+    const gchar *path = gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (rootdir_combo));
+#endif
     if (g_file_test (path, G_FILE_TEST_EXISTS))
         return g_strdup (path);
 
@@ -1268,7 +1310,7 @@ treebrowser_checkdir (const gchar *directory)
 
 /* Change root directory of treebrowser */
 static void
-treebrowser_chroot(gchar *directory)
+treebrowser_chroot (gchar *directory)
 {
     if (! directory)
         directory = addressbar_last_address;
@@ -1460,7 +1502,11 @@ treebrowser_load_bookmarks (void)
         return;
 
     const gchar *homedir = utils_get_home_dir ();
+#if !GTK_CHECK_VERSION(3,0,0)
     bookmarks = g_build_filename (homedir, ".gtk-bookmarks", NULL);
+#else
+    bookmarks = g_build_filename (homedir, ".config/gtk-3.0/bookmarks", NULL);
+#endif
     g_free ((gpointer *) homedir);
 
     if (g_file_get_contents (bookmarks, &contents, NULL, NULL)) {
@@ -1501,6 +1547,7 @@ treebrowser_load_bookmarks (void)
                 }
             }
             path_full = g_filename_from_uri (*line, NULL, NULL);
+            trace("loaded bookmark: %s", path_full);
             if (path_full != NULL) {
                 basename  = g_path_get_basename (path_full);
                 tooltip   = utils_tooltip_from_uri (path_full);
@@ -1799,6 +1846,14 @@ on_addressbar_activate (GtkEntry *entry, gpointer user_data)
     g_free (uri);
 }
 
+static void
+on_rootdir_combo_changed ()
+{
+    //treeview_clear_expanded ();
+    gchar *uri = get_default_dir ();
+    treebrowser_chroot (uri);
+    g_free (uri);
+}
 
 /* TREEVIEW EVENTS */
 
@@ -2167,6 +2222,7 @@ plugin_init (void)
     if (! expanded_rows)
         expanded_rows = g_slist_alloc ();
     create_autofilter ();
+    update_rootdirs ();
     treebrowser_chroot (NULL);
     treeview_restore_expanded (NULL);
 

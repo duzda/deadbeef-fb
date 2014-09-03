@@ -84,6 +84,7 @@ enum
 static void         gtkui_update_listview_headers (void);
 static void         setup_dragdrop (void);
 static void         create_autofilter (void);
+static void         update_rootdirs (void);
 static void         save_config (void);
 static void         load_config (void);
 static gboolean     treeview_update (void *ctx);
@@ -146,6 +147,7 @@ static void         on_button_go_home (void);
 static void         on_button_go_root (void);
 static void         on_button_go_default (void);
 static void         on_addressbar_activate (GtkEntry *entry, gpointer user_data);
+static void         on_rootdir_combo_changed (void);
 
 static gboolean     on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
                             GtkTreeSelection *selection);
