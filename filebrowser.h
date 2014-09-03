@@ -37,6 +37,7 @@
 #define     CONFSTR_FB_FILTER_AUTO          "filebrowser.autofilter"
 #define     CONFSTR_FB_SHOW_BOOKMARKS       "filebrowser.showbookmarks"
 #define     CONFSTR_FB_SHOW_ICONS           "filebrowser.showicons"
+#define     CONFSTR_FB_SHOW_TREE_LINES      "filebrowser.treelines"
 #define     CONFSTR_FB_WIDTH                "filebrowser.sidebar_width"
 #define     CONFSTR_FB_COVERART             "filebrowser.coverart_files"
 #define     CONFSTR_FB_COVERART_SIZE        "filebrowser.coverart_size"
@@ -46,6 +47,9 @@
 #define     CONFSTR_FB_COLOR_FG             "filebrowser.fgcolor"
 #define     CONFSTR_FB_COLOR_BG_SEL         "filebrowser.bgcolor_selected"
 #define     CONFSTR_FB_COLOR_FG_SEL         "filebrowser.fgcolor_selected"
+#define     CONFSTR_FB_COLOR_FG             "filebrowser.fgcolor"
+#define     CONFSTR_FB_FONT_SIZE            "filebrowser.font_size"
+#define     CONFSTR_FB_ICON_SIZE            "filebrowser.icon_size"
 
 #define     DEFAULT_FB_DEFAULT_PATH         ""
 #define     DEFAULT_FB_FILTER               ""  // auto-filter enabled by default

@@ -24,7 +24,7 @@
 */
 
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    7
+#define PLUGIN_VERSION_MINOR    72
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -41,7 +41,7 @@
 #include "utils.h"
 
 // Uncomment to enable debug messages
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #pragma message "DEBUG MODE ENABLED!"
@@ -55,9 +55,6 @@
 
 /* Hard-coded options */
 //static gboolean             CONFIG_CHROOT_ON_DCLICK     = TRUE;
-static gboolean             CONFIG_SHOW_TREE_LINES      = FALSE;
-static gint                 CONFIG_DIR_ICON_SIZE        = 24;
-static gint                 CONFIG_FILE_ICON_SIZE       = 16;
 
 /* Options changeable by user */
 static gboolean             CONFIG_ENABLED;
@@ -69,6 +66,7 @@ static const gchar *        CONFIG_FILTER               = NULL;
 static gboolean             CONFIG_FILTER_AUTO;
 static gboolean             CONFIG_SHOW_BOOKMARKS;
 static gboolean             CONFIG_SHOW_ICONS;
+static gboolean             CONFIG_SHOW_TREE_LINES;
 static gint                 CONFIG_WIDTH;
 static const gchar *        CONFIG_COVERART             = NULL;
 static gint                 CONFIG_COVERART_SIZE        = 24;
@@ -77,6 +75,8 @@ static const gchar *        CONFIG_COLOR_BG             = NULL;
 static const gchar *        CONFIG_COLOR_FG             = NULL;
 static const gchar *        CONFIG_COLOR_BG_SEL         = NULL;
 static const gchar *        CONFIG_COLOR_FG_SEL         = NULL;
+static gint                 CONFIG_ICON_SIZE            = 24;
+static gint                 CONFIG_FONT_SIZE            = 0;
 
 /* Global variables */
 static DB_misc_t            plugin;
@@ -170,9 +170,12 @@ save_config (void)
     deadbeef->conf_set_int (CONFSTR_FB_FILTER_AUTO,         CONFIG_FILTER_AUTO);
     deadbeef->conf_set_int (CONFSTR_FB_SHOW_BOOKMARKS,      CONFIG_SHOW_BOOKMARKS);
     deadbeef->conf_set_int (CONFSTR_FB_SHOW_ICONS,          CONFIG_SHOW_ICONS);
+    deadbeef->conf_set_int (CONFSTR_FB_SHOW_TREE_LINES,     CONFIG_SHOW_TREE_LINES);
     deadbeef->conf_set_int (CONFSTR_FB_WIDTH,               CONFIG_WIDTH);
     deadbeef->conf_set_int (CONFSTR_FB_COVERART_SIZE,       CONFIG_COVERART_SIZE);
     deadbeef->conf_set_int (CONFSTR_FB_SAVE_TREEVIEW,       CONFIG_SAVE_TREEVIEW);
+    deadbeef->conf_set_int (CONFSTR_FB_ICON_SIZE,           CONFIG_ICON_SIZE);
+    deadbeef->conf_set_int (CONFSTR_FB_FONT_SIZE,           CONFIG_FONT_SIZE);
 
     if (CONFIG_DEFAULT_PATH)
         deadbeef->conf_set_str (CONFSTR_FB_DEFAULT_PATH,    CONFIG_DEFAULT_PATH);
@@ -234,9 +237,12 @@ load_config (void)
     CONFIG_FILTER_AUTO          = deadbeef->conf_get_int (CONFSTR_FB_FILTER_AUTO,         TRUE);
     CONFIG_SHOW_BOOKMARKS       = deadbeef->conf_get_int (CONFSTR_FB_SHOW_BOOKMARKS,      TRUE);
     CONFIG_SHOW_ICONS           = deadbeef->conf_get_int (CONFSTR_FB_SHOW_ICONS,          TRUE);
+    CONFIG_SHOW_TREE_LINES      = deadbeef->conf_get_int (CONFSTR_FB_SHOW_TREE_LINES,     FALSE);
     CONFIG_WIDTH                = deadbeef->conf_get_int (CONFSTR_FB_WIDTH,               200);
     CONFIG_COVERART_SIZE        = deadbeef->conf_get_int (CONFSTR_FB_COVERART_SIZE,       24);
     CONFIG_SAVE_TREEVIEW        = deadbeef->conf_get_int (CONFSTR_FB_SAVE_TREEVIEW,       TRUE);
+    CONFIG_ICON_SIZE            = deadbeef->conf_get_int (CONFSTR_FB_ICON_SIZE,           24);
+    CONFIG_FONT_SIZE            = deadbeef->conf_get_int (CONFSTR_FB_FONT_SIZE,           0);
 
     CONFIG_DEFAULT_PATH         = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_DEFAULT_PATH,   DEFAULT_FB_DEFAULT_PATH));
     CONFIG_FILTER               = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_FILTER,         DEFAULT_FB_FILTER));
@@ -276,6 +282,7 @@ load_config (void)
         "filter_auto:       %d \n"
         "show_bookmarks:    %d \n"
         "show_icons:        %d \n"
+        "tree_lines:        %d \n"
         "width:             %d \n"
         "coverart:          %s \n"
         "coverart size:     %d \n"
@@ -283,7 +290,9 @@ load_config (void)
         "bgcolor:           %s \n"
         "fgcolor:           %s \n"
         "bgcolor_sel:       %s \n"
-        "fgcolor_sel:       %s \n",
+        "fgcolor_sel:       %s \n"
+        "icon_size:         %d \n"
+        "font_size:         %d \n",
         CONFIG_ENABLED,
         CONFIG_HIDDEN,
         CONFIG_DEFAULT_PATH,
@@ -293,6 +302,7 @@ load_config (void)
         CONFIG_FILTER_AUTO,
         CONFIG_SHOW_BOOKMARKS,
         CONFIG_SHOW_ICONS,
+        CONFIG_SHOW_TREE_LINES,
         CONFIG_WIDTH,
         CONFIG_COVERART,
         CONFIG_COVERART_SIZE,
@@ -300,7 +310,9 @@ load_config (void)
         CONFIG_COLOR_BG,
         CONFIG_COLOR_FG,
         CONFIG_COLOR_BG_SEL,
-        CONFIG_COLOR_FG_SEL
+        CONFIG_COLOR_FG_SEL,
+        CONFIG_ICON_SIZE,
+        CONFIG_FONT_SIZE
         );
 }
 
@@ -360,8 +372,10 @@ on_config_changed (uintptr_t ctx)
     gboolean    filter_auto     = CONFIG_FILTER_AUTO;
     gboolean    show_bookmarks  = CONFIG_SHOW_BOOKMARKS;
     gboolean    show_icons      = CONFIG_SHOW_ICONS;
+    gboolean    tree_lines      = CONFIG_SHOW_TREE_LINES;
     gint        width           = CONFIG_WIDTH;
     gint        coverart_size   = CONFIG_COVERART_SIZE;
+    gint        icon_size       = CONFIG_ICON_SIZE;
 
     gchar *     default_path    = g_strdup (CONFIG_DEFAULT_PATH);
     gchar *     filter          = g_strdup (CONFIG_FILTER);
@@ -398,7 +412,9 @@ on_config_changed (uintptr_t ctx)
                 (filter_enabled && (filter_auto != CONFIG_FILTER_AUTO)) ||
                 (show_bookmarks != CONFIG_SHOW_BOOKMARKS) ||
                 (show_icons != CONFIG_SHOW_ICONS) ||
-                (show_icons && (coverart_size != CONFIG_COVERART_SIZE)))
+                (tree_lines != CONFIG_SHOW_TREE_LINES) ||
+                (show_icons && (coverart_size != CONFIG_COVERART_SIZE)) ||
+                (show_icons && (icon_size != CONFIG_ICON_SIZE)))
             do_update = TRUE;
 
         if (CONFIG_FILTER_ENABLED) {
@@ -782,8 +798,12 @@ create_view_and_model (void)
     gtk_tree_view_column_add_attribute (treeview_column_text, render_text,
                     "text", TREEBROWSER_RENDER_TEXT);
 
+    if (CONFIG_FONT_SIZE > 0)
+        g_object_set (render_text, "size", CONFIG_FONT_SIZE*1024, NULL);
+
     gtk_tree_view_set_enable_search (GTK_TREE_VIEW (view), TRUE);
     gtk_tree_view_set_search_column (GTK_TREE_VIEW (view), TREEBROWSER_COLUMN_NAME);
+
     //gtk_tree_view_set_rubber_banding (GTK_TREE_VIEW (view), TRUE);
     gtk_tree_view_set_show_expanders (GTK_TREE_VIEW (view), TRUE);
     //gtk_tree_view_set_level_indentation (GTK_TREE_VIEW (view), 16);
@@ -1121,7 +1141,7 @@ get_icon_for_uri (gchar *uri)
 
     if (! g_file_test (uri, G_FILE_TEST_IS_DIR)) {
         ////// TODO: handle mimetypes //////
-        return utils_pixbuf_from_stock ("gtk-file", CONFIG_FILE_ICON_SIZE);
+        return utils_pixbuf_from_stock ("gtk-file", CONFIG_ICON_SIZE);
     }
 
     /* Check for cover art in folder, otherwise use default icon */
@@ -1133,7 +1153,7 @@ get_icon_for_uri (gchar *uri)
 
     /* Fallback to default icon */
     if (! icon)
-        icon =  utils_pixbuf_from_stock ("folder", CONFIG_DIR_ICON_SIZE);
+        icon =  utils_pixbuf_from_stock ("folder", CONFIG_ICON_SIZE);
 
     return icon;
 }
@@ -1452,7 +1472,7 @@ treebrowser_load_bookmarks (void)
         else {
             gtk_tree_store_prepend (treestore, &bookmarks_iter, NULL);
             icon = CONFIG_SHOW_ICONS ?
-                            utils_pixbuf_from_stock ("user-bookmarks", CONFIG_DIR_ICON_SIZE) : NULL;
+                            utils_pixbuf_from_stock ("user-bookmarks", CONFIG_ICON_SIZE) : NULL;
             gtk_tree_store_set (treestore, &bookmarks_iter,
                             TREEBROWSER_COLUMN_ICON,    icon,
                             TREEBROWSER_COLUMN_NAME,    _("Bookmarks"),
@@ -1488,7 +1508,7 @@ treebrowser_load_bookmarks (void)
                 if (g_file_test (path_full, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)) {
                     gtk_tree_store_append (treestore, &iter, &bookmarks_iter);
                     icon = CONFIG_SHOW_ICONS ?
-                                    utils_pixbuf_from_stock ("folder", CONFIG_DIR_ICON_SIZE) : NULL;
+                                    utils_pixbuf_from_stock ("folder", CONFIG_ICON_SIZE) : NULL;
                     gtk_tree_store_set (treestore, &iter,
                                     TREEBROWSER_COLUMN_ICON,    icon,
                                     TREEBROWSER_COLUMN_NAME,    basename,
@@ -1869,6 +1889,35 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
                     gtk_tree_selection_unselect_path (selection, path);
                 else
                     gtk_tree_selection_select_path (selection, path);
+            }
+        }
+    }
+    else if (event->button == 2)
+    {
+        if (event->type == GDK_BUTTON_PRESS)
+        {
+            if (path)
+            {
+                if (selected_rows < 1)
+                    gtk_tree_selection_select_path (selection, path);
+                if (! is_selected)
+                    gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
+            }
+
+            GList *rows, *uri_list;
+            uri_list = g_list_alloc ();
+            rows = gtk_tree_selection_get_selected_rows (selection, NULL);
+            g_list_foreach (rows, (GFunc)get_uris_from_selection, uri_list);
+            g_list_foreach (rows, (GFunc)gtk_tree_path_free, NULL);
+            g_list_free (rows);
+
+            if (! (event->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)))
+            {
+                add_uri_to_playlist (uri_list, PLT_CURRENT);
+            }
+            else if (event->state & GDK_SHIFT_MASK)
+            {
+                add_uri_to_playlist (uri_list, PLT_NEW);
             }
         }
     }
@@ -2292,10 +2341,12 @@ static const char settings_dlg[] =
     "property \"Filter files by extension\"     checkbox "              CONFSTR_FB_FILTER_ENABLED       " 1 ;\n"
     "property \"Shown files: \"                 entry "                 CONFSTR_FB_FILTER               " \"" DEFAULT_FB_FILTER         "\" ;\n"
     "property \"Use auto-filter instead "
-        "(based on active decoder plugins)\"    checkbox "              CONFSTR_FB_FILTER_AUTO           " 1 ;\n"
-    "property \"Show file icons / coverart\"    checkbox "              CONFSTR_FB_SHOW_ICONS           " 1 ;\n"
+        "(based on active decoder plugins)\"    checkbox "              CONFSTR_FB_FILTER_AUTO          " 1 ;\n"
+    "property \"Show tree lines\"               checkbox "              CONFSTR_FB_SHOW_TREE_LINES      " 0 ;\n"
     "property \"Allowed coverart files: \"      entry "                 CONFSTR_FB_COVERART             " \"" DEFAULT_FB_COVERART       "\" ;\n"
-    "property \"Coverart icon size: \"          spinbtn[16,32,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
+    "property \"Coverart size: \"               spinbtn[16,32,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
+    "property \"Icon size (non-coverart): \"    spinbtn[16,32,2] "      CONFSTR_FB_ICON_SIZE            " 24 ;\n"
+    "property \"Font size: \"                   spinbtn[0,32,1] "       CONFSTR_FB_FONT_SIZE            " 0 ;\n"
     "property \"Show hidden files\"             checkbox "              CONFSTR_FB_SHOW_HIDDEN_FILES    " 0 ;\n"
     "property \"Show bookmarks\"                checkbox "              CONFSTR_FB_SHOW_BOOKMARKS       " 1 ;\n"
     "property \"Sidebar width: \"               spinbtn[150,300,1] "    CONFSTR_FB_WIDTH                " 200 ;\n"
