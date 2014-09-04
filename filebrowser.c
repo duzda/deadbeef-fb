@@ -28,7 +28,7 @@
 
 
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    72
+#define PLUGIN_VERSION_MINOR    73
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -58,7 +58,6 @@
 
 
 /* Hard-coded options */
-//static gboolean             CONFIG_CHROOT_ON_DCLICK     = TRUE;
 
 /* Options changeable by user */
 static gboolean             CONFIG_ENABLED;
@@ -81,6 +80,7 @@ static const gchar *        CONFIG_COLOR_BG_SEL         = NULL;
 static const gchar *        CONFIG_COLOR_FG_SEL         = NULL;
 static gint                 CONFIG_ICON_SIZE            = 24;
 static gint                 CONFIG_FONT_SIZE            = 0;
+static gboolean             CONFIG_SORT_TREEVIEW        = TRUE;
 
 /* Global variables */
 static DB_misc_t            plugin;
@@ -181,6 +181,7 @@ save_config (void)
     deadbeef->conf_set_int (CONFSTR_FB_SAVE_TREEVIEW,       CONFIG_SAVE_TREEVIEW);
     deadbeef->conf_set_int (CONFSTR_FB_ICON_SIZE,           CONFIG_ICON_SIZE);
     deadbeef->conf_set_int (CONFSTR_FB_FONT_SIZE,           CONFIG_FONT_SIZE);
+    deadbeef->conf_set_int (CONFSTR_FB_SORT_TREEVIEW,       CONFIG_SORT_TREEVIEW);
 
     if (CONFIG_DEFAULT_PATH)
         deadbeef->conf_set_str (CONFSTR_FB_DEFAULT_PATH,    CONFIG_DEFAULT_PATH);
@@ -248,6 +249,7 @@ load_config (void)
     CONFIG_SAVE_TREEVIEW        = deadbeef->conf_get_int (CONFSTR_FB_SAVE_TREEVIEW,       TRUE);
     CONFIG_ICON_SIZE            = deadbeef->conf_get_int (CONFSTR_FB_ICON_SIZE,           24);
     CONFIG_FONT_SIZE            = deadbeef->conf_get_int (CONFSTR_FB_FONT_SIZE,           0);
+    CONFIG_SORT_TREEVIEW        = deadbeef->conf_get_int (CONFSTR_FB_SORT_TREEVIEW,       TRUE);
 
     CONFIG_DEFAULT_PATH         = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_DEFAULT_PATH,   DEFAULT_FB_DEFAULT_PATH));
     CONFIG_FILTER               = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_FILTER,         DEFAULT_FB_FILTER));
@@ -297,7 +299,8 @@ load_config (void)
         "bgcolor_sel:       %s \n"
         "fgcolor_sel:       %s \n"
         "icon_size:         %d \n"
-        "font_size:         %d \n",
+        "font_size:         %d \n"
+        "sort_treeview:     %d \n",
         CONFIG_ENABLED,
         CONFIG_HIDDEN,
         CONFIG_DEFAULT_PATH,
@@ -317,7 +320,8 @@ load_config (void)
         CONFIG_COLOR_BG_SEL,
         CONFIG_COLOR_FG_SEL,
         CONFIG_ICON_SIZE,
-        CONFIG_FONT_SIZE
+        CONFIG_FONT_SIZE,
+        CONFIG_SORT_TREEVIEW
         );
 }
 
@@ -382,6 +386,7 @@ on_config_changed (uintptr_t ctx)
     gint        width           = CONFIG_WIDTH;
     gint        coverart_size   = CONFIG_COVERART_SIZE;
     gint        icon_size       = CONFIG_ICON_SIZE;
+    gboolean    sort_treeview   = CONFIG_SORT_TREEVIEW;
 
     gchar *     default_path    = g_strdup (CONFIG_DEFAULT_PATH);
     gchar *     filter          = g_strdup (CONFIG_FILTER);
@@ -420,7 +425,8 @@ on_config_changed (uintptr_t ctx)
                 (show_icons != CONFIG_SHOW_ICONS) ||
                 (tree_lines != CONFIG_SHOW_TREE_LINES) ||
                 (show_icons && (coverart_size != CONFIG_COVERART_SIZE)) ||
-                (show_icons && (icon_size != CONFIG_ICON_SIZE)))
+                (show_icons && (icon_size != CONFIG_ICON_SIZE)) ||
+                (sort_treeview != CONFIG_SORT_TREEVIEW))
             do_update = TRUE;
 
         if (CONFIG_FILTER_ENABLED) {
@@ -762,6 +768,11 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
 
     item = gtk_separator_menu_item_new ();
     gtk_container_add(GTK_CONTAINER (menu), item);
+
+    item = gtk_check_menu_item_new_with_mnemonic (_("Sort contents by _name"));
+    gtk_container_add(GTK_CONTAINER(menu), item);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), CONFIG_SORT_TREEVIEW);
+    g_signal_connect(item, "activate", G_CALLBACK(on_menu_sort_treeview), NULL);
 
     item = gtk_check_menu_item_new_with_mnemonic (_("Show _bookmarks"));
     gtk_container_add(GTK_CONTAINER(menu), item);
@@ -1376,7 +1387,7 @@ treebrowser_browse (gchar *directory, gpointer parent)
 
     gtk_tree_store_iter_clear_nodes (parent, FALSE);
 
-    list = utils_get_file_list (directory, NULL, NULL);
+    list = utils_get_file_list (directory, NULL, CONFIG_SORT_TREEVIEW, NULL);
     if (list != NULL) {
         gboolean all_hidden = TRUE;  // show "contents hidden" note if all files are hidden
         foreach_slist_free (node, list) {
@@ -1733,6 +1744,13 @@ on_menu_copy_uri(GtkMenuItem *menuitem, GList *uri_list)
     GtkClipboard *cb = gtk_clipboard_get (GDK_SELECTION_CLIPBOARD);
     gtk_clipboard_set_text (cb, uri, -1);
     g_free (uri);
+}
+
+static void
+on_menu_sort_treeview (GtkMenuItem *menuitem, gpointer *user_data)
+{
+    CONFIG_SORT_TREEVIEW = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (menuitem));
+    treebrowser_chroot (NULL);   // update tree
 }
 
 static void
@@ -2403,6 +2421,8 @@ static const char settings_dlg[] =
     "property \"Coverart size: \"               spinbtn[16,32,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
     "property \"Icon size (non-coverart): \"    spinbtn[16,32,2] "      CONFSTR_FB_ICON_SIZE            " 24 ;\n"
     "property \"Font size: \"                   spinbtn[0,32,1] "       CONFSTR_FB_FONT_SIZE            " 0 ;\n"
+    "property \"Sort contents by name \""
+        "(otherwise by modification date)       checkbox "              CONFSTR_FB_SORT_TREEVIEW        " 1 ;\n"
     "property \"Show hidden files\"             checkbox "              CONFSTR_FB_SHOW_HIDDEN_FILES    " 0 ;\n"
     "property \"Show bookmarks\"                checkbox "              CONFSTR_FB_SHOW_BOOKMARKS       " 1 ;\n"
     "property \"Sidebar width: \"               spinbtn[150,300,1] "    CONFSTR_FB_WIDTH                " 200 ;\n"
