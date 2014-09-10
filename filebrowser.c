@@ -45,7 +45,7 @@
 #include "utils.h"
 
 // Uncomment to enable debug messages
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #pragma message "DEBUG MODE ENABLED!"
@@ -94,9 +94,9 @@ static GtkWidget *          treeview;
 static GtkTreeStore *       treestore;
 static GtkWidget *          sidebar_vbox                = NULL;
 static GtkWidget *          sidebar_vbox_bars;
+static GtkWidget *          sidebar_hbox_address;
 static GtkWidget *          addressbar;
 static gchar *              addressbar_last_address     = NULL;
-static GtkWidget *          rootdir_combo;
 static GtkTreeIter          bookmarks_iter;
 static gboolean             bookmarks_expanded          = FALSE;
 static GtkTreeViewColumn *  treeview_column_text;
@@ -330,7 +330,7 @@ treeview_update (void *ctx)
 {
     trace("update treeview\n");
     update_rootdirs ();
-    treebrowser_chroot (NULL);  // update treeview
+    treebrowser_chroot (addressbar_last_address);  // update treeview
     treeview_restore_expanded (NULL);
 
     /* This function MUST return false because it's called from g_idle_add() */
@@ -852,21 +852,24 @@ create_sidebar (void)
     GtkWidget           *scrollwin;
     GtkWidget           *toolbar;
     GtkWidget           *wid, *button_add;
+    GtkWidget           *button_go;
     GtkTreeSelection    *selection;
 
     treeview            = create_view_and_model ();
 #if !GTK_CHECK_VERSION(3,0,0)
     sidebar_vbox        = gtk_vbox_new (FALSE, 0);
     sidebar_vbox_bars   = gtk_vbox_new (FALSE, 0);
-    rootdir_combo       = gtk_combo_box_new_text ();
+    sidebar_hbox_address= gtk_hbox_new (FALSE, 0);
+    addressbar          = gtk_combo_box_text_new_with_entry ();
 #else
     sidebar_vbox        = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
     sidebar_vbox_bars   = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-    rootdir_combo       = gtk_combo_box_text_new ();
+    sidebar_hbox_address= gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+    addressbar          = gtk_combo_box_text_new_with_entry ();
 #endif
     selection           = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
-    addressbar          = gtk_entry_new ();
     scrollwin           = gtk_scrolled_window_new (NULL, NULL);
+    button_go           = gtk_button_new_with_label (_(" Go! "));
 
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrollwin),
                                     GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
@@ -925,8 +928,10 @@ create_sidebar (void)
 
     gtk_container_add(GTK_CONTAINER (scrollwin), treeview);
 
-    gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), rootdir_combo, FALSE, TRUE, 1);
-    gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), addressbar, FALSE, TRUE, 1);
+    gtk_box_pack_start (GTK_BOX (sidebar_hbox_address), addressbar, TRUE, TRUE, 1);
+    gtk_box_pack_start (GTK_BOX (sidebar_hbox_address), button_go,  FALSE, TRUE, 0);
+
+    gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), sidebar_hbox_address, FALSE, TRUE, 1);
     gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), toolbar,  FALSE, TRUE, 1);
 
     gtk_box_pack_start (GTK_BOX (sidebar_vbox), sidebar_vbox_bars, FALSE, TRUE, 1);
@@ -939,8 +944,8 @@ create_sidebar (void)
     //g_signal_connect (treeview,     "row-activated",        G_CALLBACK (on_treeview_row_activated),         NULL);
     g_signal_connect (treeview,     "row-collapsed",        G_CALLBACK (on_treeview_row_collapsed),         NULL);
     g_signal_connect (treeview,     "row-expanded",         G_CALLBACK (on_treeview_row_expanded),          NULL);
-    g_signal_connect (addressbar,   "activate",             G_CALLBACK (on_addressbar_activate),            NULL);
-    g_signal_connect (rootdir_combo,"changed",             G_CALLBACK (on_rootdir_combo_changed),           NULL);
+    //g_signal_connect (addressbar,   "changed",              G_CALLBACK (on_addressbar_changed),             NULL);
+    g_signal_connect (button_go,    "clicked",              G_CALLBACK (on_addressbar_changed),             NULL);
 
     gtk_widget_show_all (sidebar_vbox);
 }
@@ -1053,9 +1058,9 @@ static void
 update_rootdirs ()
 {
 #if !GTK_CHECK_VERSION(3,0,0)
-    gtk_list_store_clear (GTK_LIST_STORE (gtk_combo_box_get_model (GTK_COMBO_BOX (rootdir_combo))));
+    gtk_list_store_clear (GTK_LIST_STORE (gtk_combo_box_get_model (GTK_COMBO_BOX (addressbar))));
 #else
-    gtk_combo_box_text_remove_all (GTK_COMBO_BOX_TEXT (rootdir_combo));
+    gtk_combo_box_text_remove_all (GTK_COMBO_BOX_TEXT (addressbar));
 #endif
 
     gchar **config_rootdirs;
@@ -1064,14 +1069,14 @@ update_rootdirs ()
     for (int i = 0; i < g_strv_length(config_rootdirs); i++)
     {
 #if !GTK_CHECK_VERSION(3,0,0)
-        gtk_combo_box_append_text (GTK_COMBO_BOX (rootdir_combo), g_strdup (config_rootdirs[i]));
+        gtk_combo_box_append_text (GTK_COMBO_BOX (addressbar), g_strdup (config_rootdirs[i]));
 #else
-        gtk_combo_box_text_append (GTK_COMBO_BOX_TEXT (rootdir_combo), NULL, g_strdup (config_rootdirs[i]));
+        gtk_combo_box_text_append (GTK_COMBO_BOX_TEXT (addressbar), NULL, g_strdup (config_rootdirs[i]));
 #endif
     }
     g_strfreev (config_rootdirs);
 
-    gtk_combo_box_set_active (GTK_COMBO_BOX (rootdir_combo), 0);
+    gtk_combo_box_set_active (GTK_COMBO_BOX (addressbar), 0);
 }
 
 /* Check if file is filtered (return FALSE if file is filtered and not shown) */
@@ -1136,11 +1141,14 @@ check_hidden (const gchar *filename)
 static gchar *
 get_default_dir (void)
 {
+    const gchar *path = gtk_entry_get_text (GTK_ENTRY (gtk_bin_get_child( GTK_BIN (addressbar))));
+/*
 #if !GTK_CHECK_VERSION(3,0,0)
-    const gchar *path = gtk_combo_box_get_active_text (GTK_COMBO_BOX (rootdir_combo));
+    const gchar *path = gtk_combo_box_get_active_text (GTK_COMBO_BOX (addressbar));
 #else
-    const gchar *path = gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (rootdir_combo));
+    const gchar *path = gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (addressbar));
 #endif
+*/
     if (g_file_test (path, G_FILE_TEST_EXISTS))
         return g_strdup (path);
 
@@ -1324,15 +1332,12 @@ static void
 treebrowser_chroot (gchar *directory)
 {
     if (! directory)
-        directory = addressbar_last_address;
-
-    if (! directory)
         directory = get_default_dir ();  // fallback
 
     if (g_str_has_suffix (directory, G_DIR_SEPARATOR_S))
         g_strlcpy(directory, directory, strlen (directory));
 
-    gtk_entry_set_text (GTK_ENTRY (addressbar), directory);
+    gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child( GTK_BIN (addressbar))), directory);
 
     if (! directory || (strlen (directory) == 0))
         directory = G_DIR_SEPARATOR_S;
@@ -1750,28 +1755,28 @@ static void
 on_menu_sort_treeview (GtkMenuItem *menuitem, gpointer *user_data)
 {
     CONFIG_SORT_TREEVIEW = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (menuitem));
-    treebrowser_chroot (NULL);   // update tree
+    treebrowser_chroot (addressbar_last_address);   // update tree
 }
 
 static void
 on_menu_show_bookmarks (GtkMenuItem *menuitem, gpointer *user_data)
 {
     CONFIG_SHOW_BOOKMARKS = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (menuitem));
-    treebrowser_chroot (NULL);   // update tree
+    treebrowser_chroot (addressbar_last_address);   // update tree
 }
 
 static void
 on_menu_show_hidden_files(GtkMenuItem *menuitem, gpointer *user_data)
 {
     CONFIG_SHOW_HIDDEN_FILES = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (menuitem));
-    treebrowser_chroot (NULL);   // update tree
+    treebrowser_chroot (addressbar_last_address);   // update tree
 }
 
 static void
 on_menu_use_filter(GtkMenuItem *menuitem, gpointer *user_data)
 {
     CONFIG_FILTER_ENABLED = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (menuitem));
-    treebrowser_chroot (NULL);   // update tree
+    treebrowser_chroot (addressbar_last_address);   // update tree
 }
 
 
@@ -1815,7 +1820,7 @@ on_button_add_current (void)
 static void
 on_button_refresh (void)
 {
-    treebrowser_chroot (NULL);
+    treebrowser_chroot (addressbar_last_address);
 }
 
 static void
@@ -1856,16 +1861,7 @@ on_button_go_default (void)
 }
 
 static void
-on_addressbar_activate (GtkEntry *entry, gpointer user_data)
-{
-    //treeview_clear_expanded ();
-    gchar *uri = gtk_editable_get_chars (GTK_EDITABLE (entry), 0, -1);
-    treebrowser_chroot (uri);
-    g_free (uri);
-}
-
-static void
-on_rootdir_combo_changed ()
+on_addressbar_changed ()
 {
     //treeview_clear_expanded ();
     gchar *uri = get_default_dir ();

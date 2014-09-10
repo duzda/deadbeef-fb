@@ -148,8 +148,7 @@ static void         on_button_go_up (void);
 static void         on_button_go_home (void);
 static void         on_button_go_root (void);
 static void         on_button_go_default (void);
-static void         on_addressbar_activate (GtkEntry *entry, gpointer user_data);
-static void         on_rootdir_combo_changed (void);
+static void         on_addressbar_changed (void);
 
 static gboolean     on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
                             GtkTreeSelection *selection);
