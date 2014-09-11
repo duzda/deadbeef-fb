@@ -36,6 +36,7 @@
 #define     CONFSTR_FB_FILTER               "filebrowser.filter"
 #define     CONFSTR_FB_FILTER_AUTO          "filebrowser.autofilter"
 #define     CONFSTR_FB_SHOW_BOOKMARKS       "filebrowser.showbookmarks"
+#define     CONFSTR_FB_BOOKMARKS_FILE       "filebrowser.bookmarks_file"
 #define     CONFSTR_FB_SHOW_ICONS           "filebrowser.showicons"
 #define     CONFSTR_FB_SHOW_TREE_LINES      "filebrowser.treelines"
 #define     CONFSTR_FB_WIDTH                "filebrowser.sidebar_width"
@@ -55,6 +56,11 @@
 #define     DEFAULT_FB_DEFAULT_PATH         ""
 #define     DEFAULT_FB_FILTER               ""  // auto-filter enabled by default
 #define     DEFAULT_FB_COVERART             "cover.jpg;folder.jpg;front.jpg"
+#if !GTK_CHECK_VERSION(3,0,0)
+#define     DEFAULT_FB_BOOKMARKS_FILE       "$HOME/.gtk-bookmarks"
+#else
+#define     DEFAULT_FB_BOOKMARKS_FILE       "$HOME/.config/gtk-3.0/bookmarks"
+#endif
 
 
 /* Treebrowser setup */
@@ -70,7 +76,8 @@ enum
     TREEBROWSER_RENDER_ICON             = 0,
     TREEBROWSER_RENDER_TEXT             = 1,
 
-    TREEBROWSER_FLAGS_SEPARATOR         = -1
+    TREEBROWSER_FLAGS_SEPARATOR         = -1,
+    TREEBROWSER_FLAGS_BOOKMARK          = -2
 };
 
 

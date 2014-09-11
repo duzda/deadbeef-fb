@@ -28,7 +28,7 @@
 
 
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    73
+#define PLUGIN_VERSION_MINOR    75
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -68,6 +68,7 @@ static gboolean             CONFIG_FILTER_ENABLED;
 static const gchar *        CONFIG_FILTER               = NULL;
 static gboolean             CONFIG_FILTER_AUTO;
 static gboolean             CONFIG_SHOW_BOOKMARKS;
+static const gchar *        CONFIG_BOOKMARKS_FILE       = NULL;
 static gboolean             CONFIG_SHOW_ICONS;
 static gboolean             CONFIG_SHOW_TREE_LINES;
 static gint                 CONFIG_WIDTH;
@@ -189,6 +190,8 @@ save_config (void)
         deadbeef->conf_set_str (CONFSTR_FB_FILTER,          CONFIG_FILTER);
     if (CONFIG_COVERART)
         deadbeef->conf_set_str (CONFSTR_FB_COVERART,        CONFIG_COVERART);
+    if (CONFIG_BOOKMARKS_FILE)
+        deadbeef->conf_set_str (CONFSTR_FB_BOOKMARKS_FILE,  CONFIG_BOOKMARKS_FILE);
     if (CONFIG_COLOR_BG)
         deadbeef->conf_set_str (CONFSTR_FB_COLOR_BG,        CONFIG_COLOR_BG);
     if (CONFIG_COLOR_FG)
@@ -225,6 +228,8 @@ load_config (void)
         g_free ((gchar*) CONFIG_FILTER);
     if (CONFIG_COVERART)
         g_free ((gchar*) CONFIG_COVERART);
+    if (CONFIG_BOOKMARKS_FILE)
+        g_free ((gchar*) CONFIG_BOOKMARKS_FILE);
     if (CONFIG_COLOR_BG)
         g_free ((gchar*) CONFIG_COLOR_BG);
     if (CONFIG_COLOR_FG)
@@ -254,6 +259,7 @@ load_config (void)
     CONFIG_DEFAULT_PATH         = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_DEFAULT_PATH,   DEFAULT_FB_DEFAULT_PATH));
     CONFIG_FILTER               = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_FILTER,         DEFAULT_FB_FILTER));
     CONFIG_COVERART             = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_COVERART,       DEFAULT_FB_COVERART));
+    CONFIG_BOOKMARKS_FILE       = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_BOOKMARKS_FILE, DEFAULT_FB_BOOKMARKS_FILE));
     CONFIG_COLOR_BG             = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_COLOR_BG,       ""));
     CONFIG_COLOR_FG             = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_COLOR_FG,       ""));
     CONFIG_COLOR_BG_SEL         = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_COLOR_BG_SEL,   ""));
@@ -288,6 +294,7 @@ load_config (void)
         "filter:            %s \n"
         "filter_auto:       %d \n"
         "show_bookmarks:    %d \n"
+        "bookmarks_file:    %s \n"
         "show_icons:        %d \n"
         "tree_lines:        %d \n"
         "width:             %d \n"
@@ -309,6 +316,7 @@ load_config (void)
         CONFIG_FILTER,
         CONFIG_FILTER_AUTO,
         CONFIG_SHOW_BOOKMARKS,
+        CONFIG_BOOKMARKS_FILE,
         CONFIG_SHOW_ICONS,
         CONFIG_SHOW_TREE_LINES,
         CONFIG_WIDTH,
@@ -391,6 +399,7 @@ on_config_changed (uintptr_t ctx)
     gchar *     default_path    = g_strdup (CONFIG_DEFAULT_PATH);
     gchar *     filter          = g_strdup (CONFIG_FILTER);
     gchar *     coverart        = g_strdup (CONFIG_COVERART);
+    gchar *     bookmarks_file  = g_strdup (CONFIG_BOOKMARKS_FILE);
     gchar *     bgcolor         = g_strdup (CONFIG_COLOR_BG);
     gchar *     fgcolor         = g_strdup (CONFIG_COLOR_BG);
     gchar *     bgcolor_sel     = g_strdup (CONFIG_COLOR_BG_SEL);
@@ -445,6 +454,9 @@ on_config_changed (uintptr_t ctx)
         if (! utils_str_equal (coverart, CONFIG_COVERART))
             do_update = TRUE;
 
+        if (! utils_str_equal (bookmarks_file, CONFIG_BOOKMARKS_FILE))
+            do_update = TRUE;
+
         if (! utils_str_equal (default_path, CONFIG_DEFAULT_PATH))
             do_update = TRUE;
     }
@@ -452,6 +464,7 @@ on_config_changed (uintptr_t ctx)
     g_free (default_path);
     g_free (filter);
     g_free (coverart);
+    g_free (bookmarks_file);
     g_free (bgcolor);
     g_free (fgcolor);
     g_free (bgcolor_sel);
@@ -1378,12 +1391,14 @@ treebrowser_browse (gchar *directory, gpointer parent)
     directory = g_strconcat (directory, G_DIR_SEPARATOR_S, NULL);
 
     has_parent = parent ? gtk_tree_store_iter_is_valid (treestore, parent) : FALSE;
-    if (has_parent)    {
+#ifdef USE_BOOKMARKS_ICON
+    if (has_parent) {
         if (parent == &bookmarks_iter)
             treebrowser_load_bookmarks ();
     }
     else
         parent = NULL;
+#endif
 
     if (has_parent && treeview_row_expanded_iter (GTK_TREE_VIEW (treeview), parent)) {
         expanded = TRUE;
@@ -1503,6 +1518,24 @@ treebrowser_bookmarks_set_state (void)
         bookmarks_expanded = FALSE;
 }
 
+gboolean
+bookmarks_foreach_func (GtkTreeModel *model, GtkTreePath  *path, GtkTreeIter  *iter, GList **rowref_list)
+{
+    g_assert ( rowref_list != NULL );
+
+    gboolean flag;
+    gtk_tree_model_get (model, iter, TREEBROWSER_COLUMN_FLAG, &flag, -1);
+
+    if ( flag == TREEBROWSER_FLAGS_BOOKMARK )
+    {
+        GtkTreeRowReference  *rowref;
+        rowref = gtk_tree_row_reference_new (model, path);
+        *rowref_list = g_list_append (*rowref_list, rowref);
+    }
+
+    return FALSE; /* do not stop walking the store, call us with next row */
+}
+
 /* Load user's bookmarks into top of tree */
 static void
 treebrowser_load_bookmarks (void)
@@ -1517,15 +1550,20 @@ treebrowser_load_bookmarks (void)
     if (! CONFIG_SHOW_BOOKMARKS)
         return;
 
-    const gchar *homedir = utils_get_home_dir ();
-#if !GTK_CHECK_VERSION(3,0,0)
-    bookmarks = g_build_filename (homedir, ".gtk-bookmarks", NULL);
-#else
-    bookmarks = g_build_filename (homedir, ".config/gtk-3.0/bookmarks", NULL);
-#endif
-    g_free ((gpointer *) homedir);
+    bookmarks = g_strdup (CONFIG_BOOKMARKS_FILE);
 
-    if (g_file_get_contents (bookmarks, &contents, NULL, NULL)) {
+    if (g_strrstr (bookmarks, "$HOME"))
+    {
+        const gchar *homedir = utils_get_home_dir ();
+        bookmarks = g_strjoinv (homedir, g_strsplit(bookmarks, "$HOME", -1));
+        g_free ((gpointer*) homedir);
+    }
+
+    trace("Loading bookmarks from file: %s\n", bookmarks);
+
+#ifdef USE_BOOKMARKS_ICON
+    if (g_file_get_contents (bookmarks, &contents, NULL, NULL))
+    {
         if (gtk_tree_store_iter_is_valid (treestore, &bookmarks_iter)) {
             bookmarks_expanded = treeview_row_expanded_iter (GTK_TREE_VIEW (treeview),
                             &bookmarks_iter);
@@ -1563,7 +1601,7 @@ treebrowser_load_bookmarks (void)
                 }
             }
             path_full = g_filename_from_uri (*line, NULL, NULL);
-            trace("loaded bookmark: %s", path_full);
+            trace("  loaded bookmark: %s\n", path_full);
             if (path_full != NULL) {
                 basename  = g_path_get_basename (path_full);
                 tooltip   = utils_tooltip_from_uri (path_full);
@@ -1605,6 +1643,73 @@ treebrowser_load_bookmarks (void)
             gtk_tree_path_free (tree_path);
         }
     }
+#else
+    if (g_file_get_contents (bookmarks, &contents, NULL, NULL))
+    {
+        GList *bookmarks_list = NULL;
+        gtk_tree_model_foreach (GTK_TREE_MODEL (treestore), (GtkTreeModelForeachFunc) bookmarks_foreach_func, &bookmarks_list);
+
+        for ( GList *node = bookmarks_list;  node != NULL;  node = node->next )
+        {
+            GtkTreePath *path;
+            path = gtk_tree_row_reference_get_path ((GtkTreeRowReference*) node->data);
+
+            if (path)
+            {
+                GtkTreeIter  iter;
+
+                if (gtk_tree_model_get_iter (GTK_TREE_MODEL (treestore), &iter, path))
+                    gtk_list_store_remove (GTK_LIST_STORE (treestore), &iter);
+
+                /* FIXME/CHECK: Do we need to free the path here? */
+            }
+        }
+
+        g_list_foreach (bookmarks_list, (GFunc) gtk_tree_row_reference_free, NULL);
+        g_list_free (bookmarks_list);
+
+        lines = g_strsplit (contents, "\n", 0);
+        for (line = lines; *line; ++line) {
+            if (**line) {
+                pos = g_utf8_strchr (*line, -1, ' ');
+                if (pos != NULL) {
+                    *pos = '\0';
+                }
+            }
+            path_full = g_filename_from_uri (*line, NULL, NULL);
+            trace("  loaded bookmark: %s\n", path_full);
+            if (path_full != NULL) {
+                basename  = g_path_get_basename (path_full);
+                tooltip   = utils_tooltip_from_uri (path_full);
+
+                if (g_file_test (path_full, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR))
+                {
+                    gtk_tree_store_prepend (treestore, &iter, NULL);
+                    icon = CONFIG_SHOW_ICONS ?
+                                    utils_pixbuf_from_stock ("user-bookmarks", CONFIG_ICON_SIZE) : NULL;
+                    gtk_tree_store_set (treestore, &iter,
+                                    TREEBROWSER_COLUMN_ICON,    icon,
+                                    TREEBROWSER_COLUMN_NAME,    basename,
+                                    TREEBROWSER_COLUMN_URI,     path_full,
+                                    TREEBROWSER_COLUMN_TOOLTIP, tooltip,
+                                    TREEBROWSER_COLUMN_FLAG,    TREEBROWSER_FLAGS_BOOKMARK,
+                                    -1);
+                    if (icon)
+                        g_object_unref(icon);
+                }
+
+                g_free (path_full);
+                g_free (basename);
+                g_free (tooltip);
+            }
+        }
+
+        g_strfreev (lines);
+        g_free (contents);
+    }
+#endif
+
+    g_free (bookmarks);
 }
 
 
@@ -2183,13 +2288,13 @@ on_treeview_row_expanded (GtkWidget *widget, GtkTreeIter *iter,
         gtk_tree_view_expand_row (GTK_TREE_VIEW(treeview), path, FALSE);
         flag_on_expand_refresh = FALSE;
     }
-
+/*
     if (CONFIG_SHOW_ICONS) {
         GdkPixbuf *icon = get_icon_for_uri (uri);
         gtk_tree_store_set (treestore, iter, TREEBROWSER_COLUMN_ICON, icon, -1);
         g_object_unref (icon);
     }
-
+*/
     GSList *node = treeview_check_expanded (uri);
     if (! node)
     {
@@ -2210,13 +2315,13 @@ on_treeview_row_collapsed (GtkWidget *widget, GtkTreeIter *iter,
                     TREEBROWSER_COLUMN_URI, &uri, -1);
     if (! uri)
         return;
-
+/*
     if (CONFIG_SHOW_ICONS) {
         GdkPixbuf *icon = get_icon_for_uri (uri);
         gtk_tree_store_set (treestore, iter, TREEBROWSER_COLUMN_ICON, icon, -1);
         g_object_unref (icon);
     }
-
+*/
     GSList *node = treeview_check_expanded (uri);
     if (node) {
         g_free (node->data);
@@ -2421,6 +2526,7 @@ static const char settings_dlg[] =
         "(otherwise by modification date)       checkbox "              CONFSTR_FB_SORT_TREEVIEW        " 1 ;\n"
     "property \"Show hidden files\"             checkbox "              CONFSTR_FB_SHOW_HIDDEN_FILES    " 0 ;\n"
     "property \"Show bookmarks\"                checkbox "              CONFSTR_FB_SHOW_BOOKMARKS       " 1 ;\n"
+    "property \"Bookmarks file (GTK)\"          entry "                 CONFSTR_FB_BOOKMARKS_FILE       " \"" DEFAULT_FB_BOOKMARKS_FILE "\" ;\n"
     "property \"Sidebar width: \"               spinbtn[150,300,1] "    CONFSTR_FB_WIDTH                " 200 ;\n"
     "property \"Save treeview over sessions (restore previously expanded items)\" "
                                                "checkbox "              CONFSTR_FB_SAVE_TREEVIEW        " 1 ;\n"
