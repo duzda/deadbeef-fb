@@ -2114,8 +2114,11 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
             g_list_foreach (rows, (GFunc)gtk_tree_path_free, NULL);
             g_list_free (rows);
 
-            gtk_menu_popup (GTK_MENU (create_popup_menu (path, "", uri_list)),
-                            NULL, NULL, NULL, NULL, event->button, event->time);
+            GtkWidget *menu;
+            menu = create_popup_menu (path, "", uri_list);
+            // create new accel group to avoid conflicts with main window
+            gtk_menu_set_accel_group (GTK_MENU (menu), gtk_accel_group_new ());
+            gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, event->button, event->time);
         }
     }
 
