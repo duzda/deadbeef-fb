@@ -2,7 +2,7 @@
     Filebrowser plugin for the DeaDBeeF audio player
     http://sourceforge.net/projects/deadbeef-fb/
 
-    Copyright (C) 2011 Jan D. Behrens <zykure@web.de>
+    Copyright (C) 2011-2014 Jan D. Behrens <zykure@web.de>
 
     Based on Geany treebrowser plugin:
         treebrowser.c - v0.20
@@ -114,6 +114,7 @@ static void         create_sidebar (void);
 
 static void         gtk_tree_store_iter_clear_nodes (gpointer iter, gboolean delete_root);
 //static void         add_single_uri_to_playlist (gchar *uri, int plt);
+static void         add_uri_to_playlist_worker (void *data);
 static void         add_uri_to_playlist (GList *uri_list, int plt);
 static gboolean     check_filtered (const gchar *base_name);
 static gboolean     check_hidden (const gchar *filename);

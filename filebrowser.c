@@ -23,12 +23,9 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-// todo:
-// + path to bookmarks file
-
 
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    75
+#define PLUGIN_VERSION_MINOR    77
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -994,6 +991,51 @@ add_single_uri_to_playlist (gchar *uri, int index)
     g_list_free (uri_list);
 }
 */
+
+static void
+add_uri_to_playlist_worker (void *data)
+{
+    GList *uri_list = (GList*)data;
+
+    ddb_playlist_t *plt = deadbeef->plt_get_curr ();
+
+    if (! deadbeef->plt_add_files_begin (plt, 0))
+    {
+        GList *node;
+        for (node = uri_list->next; node; node = node->next)
+        {
+            gchar *uri = node->data;
+            if (g_file_test (uri, G_FILE_TEST_IS_DIR))
+            {
+                trace("trying to add folder %s\n", uri);
+                if (deadbeef->plt_add_dir2 (0, plt, uri, NULL, NULL) < 0)
+                    fprintf (stderr, _("failed to add folder %s\n"), uri);
+            }
+            else
+            {
+                trace("trying to add file %s\n", uri);
+                if (deadbeef->plt_add_file2 (0, plt, uri, NULL, NULL) < 0)
+                    fprintf (stderr, _("failed to add file %s\n"), uri);
+            }
+            g_free (uri);
+        }
+
+        deadbeef->plt_modified (plt);
+        deadbeef->plt_add_files_end (plt, 0);
+
+        trace("finished adding files to playlist\n");
+        deadbeef->plt_save_config (plt);
+        deadbeef->conf_save ();
+    }
+    else
+    {
+        fprintf (stderr, _("could not add files to playlist (lock failed)\n"));
+    }
+
+    deadbeef->plt_unref (plt);
+    g_list_free (uri_list);
+}
+
 static void
 add_uri_to_playlist (GList *uri_list, int index)
 {
@@ -1005,10 +1047,12 @@ add_uri_to_playlist (GList *uri_list, int index)
     ddb_playlist_t *plt;
     int count = deadbeef->plt_get_count ();
 
-    if (index == PLT_CURRENT) {
+    if (index == PLT_CURRENT)
+    {
         plt = deadbeef->plt_get_curr ();
     }
-    else {
+    else
+    {
         if ((index == PLT_NEW) || (index >= count)) {
             const gchar *title = _("New Playlist");
 
@@ -1034,37 +1078,18 @@ add_uri_to_playlist (GList *uri_list, int index)
         plt = deadbeef->plt_get_for_idx (index);
     }
 
+    deadbeef->pl_unlock ();
+
     if (plt == NULL) {
         fprintf (stderr, _("could not get playlist\n"));
-        deadbeef->pl_unlock ();
         return;
     }
 
-    if (deadbeef->plt_add_files_begin (plt, 0) >= 0)  // -1 means error
-    {
-        GList *node;
-        for (node = uri_list->next; node; node = node->next)
-        {
-            gchar *uri = node->data;
-            trace("trying to add file/folder %s\n", uri);
-            if (g_file_test (uri, G_FILE_TEST_IS_DIR)) {
-                if (deadbeef->plt_add_dir (plt, uri, NULL, NULL) < 0)
-                    fprintf (stderr, _("failed to add folder %s\n"), uri);
-            }
-            else {
-                if (deadbeef->plt_add_file (plt, uri, NULL, NULL) < 0)
-                    fprintf (stderr, _("failed to add file %s\n"), uri);
-            }
-        }
-        deadbeef->plt_modified (plt);
-    }
-    else
-    {
-        fprintf (stderr, _("could not add files to playlist (lock failed)\n"));
-    }
+    deadbeef->plt_set_curr (plt);
 
-    deadbeef->plt_add_files_end (plt, 0);
-    deadbeef->pl_unlock ();
+    trace("starting thread for adding files to playlist\n");
+    intptr_t tid = deadbeef->thread_start (add_uri_to_playlist_worker, (void*)uri_list);
+    deadbeef->thread_detach (tid);
 }
 
 static void
@@ -2402,6 +2427,11 @@ filebrowser_stop (void)
 int
 filebrowser_startup (GtkWidget *cont)
 {
+#if DDB_GTKUI_API_VERSION_MAJOR >= 2
+    if (! cont)
+        return -1;
+#endif
+
     trace("startup\n");
     if (create_interface (cont) < 0)
         return -1;
@@ -2419,6 +2449,11 @@ filebrowser_startup (GtkWidget *cont)
 int
 filebrowser_shutdown (GtkWidget *cont)
 {
+#if DDB_GTKUI_API_VERSION_MAJOR >= 2
+    if (! cont)
+        return -1;
+#endif
+
     trace("shutdown\n");
     if (restore_interface (cont) < 0)
         return -1;
@@ -2455,7 +2490,6 @@ w_filebrowser_create (void) {
 
     return (ddb_gtkui_widget_t *)w;
 }
-
 #endif
 
 int
@@ -2513,23 +2547,27 @@ filebrowser_disconnect (void)
     return 0;
 }
 
+
 static const char settings_dlg[] =
-    "property \"Enable\"                        checkbox "              CONFSTR_FB_ENABLED              " 1 ;\n"
+#if DDB_GTKUI_API_VERSION_MAJOR < 2
+    // not used in new API, use design mode instead
+    "property \"Enable plugin\"                 checkbox "              CONFSTR_FB_ENABLED              " 1 ;\n"
+#endif
     "property \"Default path: \"                entry "                 CONFSTR_FB_DEFAULT_PATH         " \"" DEFAULT_FB_DEFAULT_PATH   "\" ;\n"
     "property \"Filter files by extension\"     checkbox "              CONFSTR_FB_FILTER_ENABLED       " 1 ;\n"
-    "property \"Shown files: \"                 entry "                 CONFSTR_FB_FILTER               " \"" DEFAULT_FB_FILTER         "\" ;\n"
-    "property \"Use auto-filter instead "
-        "(based on active decoder plugins)\"    checkbox "              CONFSTR_FB_FILTER_AUTO          " 1 ;\n"
-    "property \"Show tree lines\"               checkbox "              CONFSTR_FB_SHOW_TREE_LINES      " 0 ;\n"
-    "property \"Allowed coverart files: \"      entry "                 CONFSTR_FB_COVERART             " \"" DEFAULT_FB_COVERART       "\" ;\n"
-    "property \"Coverart size: \"               spinbtn[16,32,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
-    "property \"Icon size (non-coverart): \"    spinbtn[16,32,2] "      CONFSTR_FB_ICON_SIZE            " 24 ;\n"
-    "property \"Font size: \"                   spinbtn[0,32,1] "       CONFSTR_FB_FONT_SIZE            " 0 ;\n"
-    "property \"Sort contents by name "
-        "(otherwise by modification date) \"    checkbox "              CONFSTR_FB_SORT_TREEVIEW        " 1 ;\n"
+    "property \"Filter for shown files: \"      entry "                 CONFSTR_FB_FILTER               " \"" DEFAULT_FB_FILTER         "\" ;\n"
+    "property \"Use auto-filter instead (based on active decoder plugins)\" "
+                                               "checkbox "              CONFSTR_FB_FILTER_AUTO          " 1 ;\n"
     "property \"Show hidden files\"             checkbox "              CONFSTR_FB_SHOW_HIDDEN_FILES    " 0 ;\n"
     "property \"Show bookmarks\"                checkbox "              CONFSTR_FB_SHOW_BOOKMARKS       " 1 ;\n"
     "property \"Bookmarks file (GTK)\"          entry "                 CONFSTR_FB_BOOKMARKS_FILE       " \"" DEFAULT_FB_BOOKMARKS_FILE "\" ;\n"
+    "property \"Sort contents by name (otherwise by modification date) \" "
+                                               "checkbox "              CONFSTR_FB_SORT_TREEVIEW        " 1 ;\n"
+    "property \"Show tree lines\"               checkbox "              CONFSTR_FB_SHOW_TREE_LINES      " 0 ;\n"
+    "property \"Font size: \"                   spinbtn[0,32,1] "       CONFSTR_FB_FONT_SIZE            " 0 ;\n"
+    "property \"Icon size (non-coverart): \"    spinbtn[16,32,2] "      CONFSTR_FB_ICON_SIZE            " 24 ;\n"
+    "property \"Coverart size: \"               spinbtn[16,32,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
+    "property \"Filter for coverart files: \"   entry "                 CONFSTR_FB_COVERART             " \"" DEFAULT_FB_COVERART       "\" ;\n"
     "property \"Sidebar width: \"               spinbtn[150,300,1] "    CONFSTR_FB_WIDTH                " 200 ;\n"
     "property \"Save treeview over sessions (restore previously expanded items)\" "
                                                "checkbox "              CONFSTR_FB_SAVE_TREEVIEW        " 1 ;\n"
