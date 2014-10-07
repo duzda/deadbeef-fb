@@ -42,7 +42,7 @@
 #include "utils.h"
 
 // Uncomment to enable debug messages
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #pragma message "DEBUG MODE ENABLED!"
