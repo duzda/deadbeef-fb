@@ -1,7 +1,7 @@
 Filebrowser plugin for the DeaDBeeF audio player
 http://sourceforge.net/projects/deadbeef-fb/
 
-Copyright (C) 2011 Jan D. Behrens <zykure@web.de>
+Copyright (C) 2011-2014 Jan D. Behrens <zykure@web.de>
 
 Based on Geany treebrowser plugin:
     treebrowser.c - v0.20
@@ -16,8 +16,12 @@ Check out the player itself here:
 
 1. Compiling etc.
 
-* To build the plugin from source, you'll need the deadbeef and GTK2 headers
-  (deadbeef-dev, libgtk2.0-dev).
+* You can also grab the binary archive with the precompiled plugin
+  if you don't want to compile for yourself. See below how to install
+  the plugin when you already have the binary files.
+
+* To build the plugin from source, you'll need the deadbeef and
+  GTK2/GTK3 headers (deadbeef-dev, libgtk2.0-dev, libgtk3.0-dev).
 
 * To get the sources from git, use the following commands:
     First donwload:   git clone git://deadbeef-fb.git.sourceforge.net/gitroot/deadbeef-fb/deadbeef-fb
@@ -30,9 +34,10 @@ Check out the player itself here:
     make
   to compile the sources. After that, the plugin is ready for install.
 
-* To enable support for the new GTK3 user interface of Deadbeef, use the --enable-gtk3
-  flag on configure (for compatibility reasons, the GTK3 version is disabled yb default):
-    ./configure --enable-gtk3
+* By default, both GTK2 and GTK3 versions of the plugin are built. You
+  can disable either one by passing the --disable-gtk2|3 flag to
+  configure:
+    ./configure --disable-gtk3
   Then continue as described above.
 
 
@@ -51,9 +56,10 @@ Check out the player itself here:
   "quickinstall.sh" script.
   It will put the plugin file into /usr/local/lib/deadbeef/.
 
-* If you want to install the plugin into your system directory (e.g. /usr),
-  it's better to compile the program and use "make install", as this
-  also takes care of other files like translations!
+* If you want to install the plugin into your system directory (e.g.
+  /usr), it's better to compile the program and use "make install", as
+  this also takes care of other files like translations! By default,
+  the plugin will be installed to /usr/local/ using this method.
 
 
 ==========================================================
@@ -61,4 +67,4 @@ Check out the player itself here:
 3. Problems?
 
 * If DeaDBeeF stops working after you've installed the plugin, just
-  remove the .so file from the appropriate directory mentioned above.
+  remove the .so file from the directory you choosed above.
