@@ -157,6 +157,8 @@ static void         on_button_go_home (void);
 static void         on_button_go_root (void);
 static void         on_button_go_default (void);
 static void         on_addressbar_changed (void);
+static void         on_searchbar_changed (void);
+static void         on_searchbar_cleared (void);
 
 static gboolean     on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
                             GtkTreeSelection *selection);

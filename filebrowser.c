@@ -24,8 +24,11 @@
 */
 
 
+/// TODO - add search text filter (only show files containing search text)
+
+
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    77
+#define PLUGIN_VERSION_MINOR    78
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -95,6 +98,9 @@ static GtkWidget *          sidebar_vbox_bars;
 static GtkWidget *          sidebar_hbox_address;
 static GtkWidget *          addressbar;
 static gchar *              addressbar_last_address     = NULL;
+static GtkWidget *          sidebar_hbox_search;
+static GtkWidget *          searchbar;
+static gchar *              searchbar_text              = NULL;
 static GtkTreeIter          bookmarks_iter;
 static gboolean             bookmarks_expanded          = FALSE;
 static GtkTreeViewColumn *  treeview_column_text;
@@ -862,7 +868,7 @@ create_sidebar (void)
     GtkWidget           *scrollwin;
     GtkWidget           *toolbar;
     GtkWidget           *wid, *button_add;
-    GtkWidget           *button_go;
+    GtkWidget           *button_go, *button_clear;
     GtkTreeSelection    *selection;
 
     treeview            = create_view_and_model ();
@@ -870,16 +876,20 @@ create_sidebar (void)
     sidebar_vbox        = gtk_vbox_new (FALSE, 0);
     sidebar_vbox_bars   = gtk_vbox_new (FALSE, 0);
     sidebar_hbox_address= gtk_hbox_new (FALSE, 0);
+    sidebar_hbox_search = gtk_hbox_new (FALSE, 0);
     addressbar          = gtk_combo_box_text_new_with_entry ();
 #else
     sidebar_vbox        = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
     sidebar_vbox_bars   = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
     sidebar_hbox_address= gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+    sidebar_hbox_search = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     addressbar          = gtk_combo_box_text_new_with_entry ();
 #endif
+    searchbar           = gtk_entry_new ();
     selection           = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
     scrollwin           = gtk_scrolled_window_new (NULL, NULL);
     button_go           = gtk_button_new_with_label (_(" Go! "));
+    button_clear        = gtk_button_new_with_label (_(" Clear "));
 
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrollwin),
                                     GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
@@ -941,7 +951,11 @@ create_sidebar (void)
     gtk_box_pack_start (GTK_BOX (sidebar_hbox_address), addressbar, TRUE, TRUE, 1);
     gtk_box_pack_start (GTK_BOX (sidebar_hbox_address), button_go,  FALSE, TRUE, 0);
 
+    gtk_box_pack_start (GTK_BOX (sidebar_hbox_search), searchbar, TRUE, TRUE, 1);
+    gtk_box_pack_start (GTK_BOX (sidebar_hbox_search), button_clear,  FALSE, TRUE, 0);
+
     gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), sidebar_hbox_address, FALSE, TRUE, 1);
+    gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), sidebar_hbox_search, FALSE, TRUE, 1);
     gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), toolbar,  FALSE, TRUE, 1);
 
     gtk_box_pack_start (GTK_BOX (sidebar_vbox), sidebar_vbox_bars, FALSE, TRUE, 1);
@@ -954,8 +968,9 @@ create_sidebar (void)
     //g_signal_connect (treeview,     "row-activated",        G_CALLBACK (on_treeview_row_activated),         NULL);
     g_signal_connect (treeview,     "row-collapsed",        G_CALLBACK (on_treeview_row_collapsed),         NULL);
     g_signal_connect (treeview,     "row-expanded",         G_CALLBACK (on_treeview_row_expanded),          NULL);
-    //g_signal_connect (addressbar,   "changed",              G_CALLBACK (on_addressbar_changed),             NULL);
     g_signal_connect (button_go,    "clicked",              G_CALLBACK (on_addressbar_changed),             NULL);
+    g_signal_connect (searchbar,    "changed",              G_CALLBACK (on_searchbar_changed),              NULL);
+    g_signal_connect (button_clear, "clicked",              G_CALLBACK (on_searchbar_cleared),              NULL);
 
     gtk_widget_show_all (sidebar_vbox);
 }
@@ -1165,13 +1180,24 @@ check_hidden (const gchar *filename)
 //    if (! NZV (base_name))
 //        return FALSE;
 
-    gboolean is_hidden = (base_name[0] == '.');
+    gboolean is_hidden = FALSE;
+
+    if ((! CONFIG_SHOW_HIDDEN_FILES) && (base_name[0] == '.'))
+        is_hidden = TRUE;
+
+    if (searchbar_text)
+    {
+        gint n = strlen (searchbar_text);
+        gint m = strlen (base_name);
+        if (n > 0)
+        {
+            if (strncmp (base_name, searchbar_text, n < m ? n : m))
+                is_hidden = TRUE;
+        }
+    }
+
     g_free ((gpointer) base_name);
-
-    if ((! CONFIG_SHOW_HIDDEN_FILES) && is_hidden)
-        return TRUE;
-
-    return FALSE;
+    return is_hidden;
 }
 
 
@@ -1998,6 +2024,22 @@ on_addressbar_changed ()
     treebrowser_chroot (uri);
     g_free (uri);
 }
+
+static void
+on_searchbar_changed ()
+{
+    if (searchbar_text)
+        g_free (searchbar_text);
+    searchbar_text = g_strdup (gtk_entry_get_text (GTK_ENTRY (searchbar)));
+    treeview_update (NULL);
+}
+
+static void
+on_searchbar_cleared ()
+{
+    gtk_entry_set_text (GTK_ENTRY (searchbar), "");
+}
+
 
 /* TREEVIEW EVENTS */
 
