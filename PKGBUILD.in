@@ -1,17 +1,16 @@
 # Author: Jan D. Behrens <zykure@web.de>
+# Maintainer: Jan D. Behrens <zykure@web.de>
 
-pkgname=@PACKAGENAME@
-pkgver=@DATE@
+pkgname=@PACKAGENAME@@PACKAGEFLAG@
+pkgver=@PACKAGEVER@
 pkgrel=@PACKAGEREL@
 pkgdesc="A filebrowser plugin for the DeaDBeeF audio player"
 arch=('any')
 url="http://sourceforge.net/projects/deadbeef-fb/"
 license=(GPL)
-depends=('deadbeef>=0.6')
-optdepends=('gtk2: needed to build GTK2 version'
-      'gtk3: needed to build GTK3 version')
+depends=('deadbeef>=0.6', @PACKAGEDEPS@)
 backup=()
-source=(http://downloads.sourceforge.net/project/${pkgname}/master/${pkgname}_${pkgver}_src.tar.gz)
+source=(http://downloads.sourceforge.net/project/deadbeef-fb/master/@SOURCENAME@_src.tar.gz)
 md5sums=('@MD5SUM@')
 sha1sums=('@SHA1SUM@')
 
@@ -19,14 +18,14 @@ build() {
   cd "$srcdir/$pkgname-$pkgver/"
   ./autogen.sh
   ./configure
-  make PREFIX=/usr sysconfdir=/etc localstatedir=/var
+  make PREFIX=/usr
 }
 
 package() {
   cd "$srcdir/$pkgname-$pkgver/"
   ./autogen.sh
   ./configure
-  make PREFIX=/usr sysconfdir=/etc localstatedir=/var DESTDIR="$pkgdir" install
+  make PREFIX=/usr DESTDIR="$pkgdir" install
 }
 
 # vim:set ts=2 sw=2 et:
