@@ -15,17 +15,14 @@ md5sums=('@MD5SUM@')
 sha1sums=('@SHA1SUM@')
 
 build() {
-  cd "$srcdir/$pkgname-$pkgver/"
-  ./autogen.sh
-  ./configure
-  make PREFIX=/usr
+  cd $srcdir/deadbeef-fb-devel
+  ./configure --prefix=/usr @PACKAGECONFIG@
+  make
 }
 
 package() {
-  cd "$srcdir/$pkgname-$pkgver/"
-  ./autogen.sh
-  ./configure
-  make PREFIX=/usr DESTDIR="$pkgdir" install
+  cd $srcdir/deadbeef-fb-devel
+  make DESTDIR="$pkgdir" install
 }
 
 # vim:set ts=2 sw=2 et:
