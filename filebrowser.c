@@ -24,11 +24,8 @@
 */
 
 
-/// TODO - add search text filter (only show files containing search text)
-
-
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    78
+#define PLUGIN_VERSION_MINOR    79
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -40,12 +37,11 @@
 
 #include <deadbeef/deadbeef.h>
 #include <deadbeef/gtkui_api.h>
+
+#include "config.h"
 #include "filebrowser.h"
 #include "support.h"
 #include "utils.h"
-
-// Uncomment to enable debug messages
-//#define DEBUG
 
 #ifdef DEBUG
 #pragma message "DEBUG MODE ENABLED!"
@@ -1966,7 +1962,7 @@ on_button_add_current (void)
 
     uri_list = g_list_alloc ();
     g_list_foreach (rows, (GFunc) on_button_add_current_helper, uri_list);
-    g_list_foreach (rows, (GFunc)gtk_tree_path_free, NULL);
+    g_list_foreach (rows, (GFunc) gtk_tree_path_free, NULL);
     g_list_free (rows);
 
     add_uri_to_playlist (uri_list, PLT_CURRENT);
