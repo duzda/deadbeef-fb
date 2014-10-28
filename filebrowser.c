@@ -1010,39 +1010,39 @@ add_uri_to_playlist_worker (void *data)
 
     ddb_playlist_t *plt = deadbeef->plt_get_curr ();
 
-    if (! deadbeef->plt_add_files_begin (plt, 0))
-    {
-        GList *node;
-        for (node = uri_list->next; node; node = node->next)
-        {
-            gchar *uri = node->data;
-            if (g_file_test (uri, G_FILE_TEST_IS_DIR))
-            {
-                trace("trying to add folder %s\n", uri);
-                if (deadbeef->plt_add_dir2 (0, plt, uri, NULL, NULL) < 0)
-                    fprintf (stderr, _("failed to add folder %s\n"), uri);
-            }
-            else
-            {
-                trace("trying to add file %s\n", uri);
-                if (deadbeef->plt_add_file2 (0, plt, uri, NULL, NULL) < 0)
-                    fprintf (stderr, _("failed to add file %s\n"), uri);
-            }
-            g_free (uri);
-        }
-
-        deadbeef->plt_modified (plt);
-        deadbeef->plt_add_files_end (plt, 0);
-
-        trace("finished adding files to playlist\n");
-        deadbeef->plt_save_config (plt);
-        deadbeef->conf_save ();
-    }
-    else
+    if (deadbeef->plt_add_files_begin (plt, 0) < 0)
     {
         fprintf (stderr, _("could not add files to playlist (lock failed)\n"));
+        goto error;
     }
 
+    GList *node;
+    for (node = uri_list->next; node; node = node->next)
+    {
+        gchar *uri = node->data;
+        if (g_file_test (uri, G_FILE_TEST_IS_DIR))
+        {
+            trace("trying to add folder %s\n", uri);
+            if (deadbeef->plt_add_dir2 (0, plt, uri, NULL, NULL) < 0)
+                fprintf (stderr, _("failed to add folder %s\n"), uri);
+        }
+        else
+        {
+            trace("trying to add file %s\n", uri);
+            if (deadbeef->plt_add_file2 (0, plt, uri, NULL, NULL) < 0)
+                fprintf (stderr, _("failed to add file %s\n"), uri);
+        }
+        g_free (uri);
+    }
+
+    deadbeef->plt_add_files_end (plt, 0);
+    deadbeef->plt_modified (plt);
+
+    trace("finished adding files to playlist\n");
+    deadbeef->plt_save_config (plt);
+    deadbeef->conf_save ();
+
+error:
     deadbeef->plt_unref (plt);
     g_list_free (uri_list);
 }
@@ -1934,22 +1934,6 @@ on_menu_use_filter(GtkMenuItem *menuitem, gpointer *user_data)
 
 /* TOOLBAR'S EVENTS */
 
-void
-on_button_add_current_helper (gpointer data, gpointer userdata)
-{
-    GtkTreeIter     iter;
-    gchar           *uri;
-    GtkTreePath     *path       = data;
-    GList           *uri_list   = userdata;
-
-    if (! gtk_tree_model_get_iter (GTK_TREE_MODEL (treestore), &iter, path))
-        return;
-
-    gtk_tree_model_get (GTK_TREE_MODEL (treestore), &iter,
-                    TREEBROWSER_COLUMN_URI, &uri, -1);
-    uri_list = g_list_append (uri_list, uri);
-}
-
 static void
 on_button_add_current (void)
 {
@@ -1961,12 +1945,11 @@ on_button_add_current (void)
     rows = gtk_tree_selection_get_selected_rows (selection, NULL);
 
     uri_list = g_list_alloc ();
-    g_list_foreach (rows, (GFunc) on_button_add_current_helper, uri_list);
+    g_list_foreach (rows, (GFunc) get_uris_from_selection, uri_list);
     g_list_foreach (rows, (GFunc) gtk_tree_path_free, NULL);
     g_list_free (rows);
 
     add_uri_to_playlist (uri_list, PLT_CURRENT);
-    g_list_free (uri_list);
 }
 
 static void
