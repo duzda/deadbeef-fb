@@ -16,6 +16,7 @@ SRCTARGET=${BUILDROOT}/../${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
 
 MD5SUM=$(md5sum ${SRCTARGET} | cut -c -32)
 SHA1SUM=$(sha1sum ${SRCTARGET} | cut -c -40)
+SHA256SUM=$(sha256sum ${SRCTARGET} | cut -c -64)
 
 function make_package
 {
@@ -38,6 +39,7 @@ function make_package
         | sed s/@SOURCENAME@/${PACKAGENAME}${FLAG}_${DATE}/g \
         | sed s/@MD5SUM@/${MD5SUM}/g \
         | sed s/@SHA1SUM@/${SHA1SUM}/g \
+        | sed s/@SHA256SUM@/${SHA256SUM}/g \
         > PKGBUILD
     mkaurball
     rm -f PKGBUILD

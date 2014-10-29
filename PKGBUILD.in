@@ -1,4 +1,6 @@
 # Author: Jan D. Behrens <zykure@web.de>
+# Contributor: doctorkohaku <maido.in.heaven@gmail.com>
+# Contributor: Alad Wenter <the.changing.side@gmail.com>
 # Maintainer: Jan D. Behrens <zykure@web.de>
 
 pkgname=@PACKAGENAME@@PACKAGEFLAG@
@@ -13,6 +15,7 @@ backup=()
 source=(http://downloads.sourceforge.net/project/deadbeef-fb/master/@SOURCENAME@_src.tar.gz)
 md5sums=('@MD5SUM@')
 sha1sums=('@SHA1SUM@')
+sha256sums=('@SHA256SUM@')
 
 build() {
   cd $srcdir/deadbeef-fb-devel
