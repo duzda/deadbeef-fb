@@ -109,6 +109,8 @@ static gint                 mouseclick_lastpos[2]       = { 0, 0 };
 static gboolean             mouseclick_dragwait         = FALSE;
 static GtkTreePath *        mouseclick_lastpath         = NULL;
 
+static gboolean             all_expanded                = FALSE;
+
 
 /* Helper functions */
 
@@ -1168,6 +1170,25 @@ check_filtered (const gchar *base_name)
     return filtered;
 }
 
+static gboolean
+check_search (const gchar *filename)
+{
+    const gchar *sub_path = g_strsplit (filename, addressbar_last_address, 2)[1];
+    gboolean is_searched = TRUE;
+
+    if (searchbar_text) {
+        gint n = strlen (searchbar_text);
+        gint m = strlen (sub_path);
+        if (n > 0) {
+            if (g_strstr_len (g_utf8_casefold(sub_path, m), m, g_utf8_casefold(searchbar_text, n)) == NULL)
+                is_searched = FALSE;
+        }
+    }
+
+    g_free ((gpointer) sub_path);
+    return is_searched;
+}
+
 /* Check if file should be hidden (return TRUE if file is not shown) */
 static gboolean
 check_hidden (const gchar *filename)
@@ -1180,17 +1201,6 @@ check_hidden (const gchar *filename)
 
     if ((! CONFIG_SHOW_HIDDEN_FILES) && (base_name[0] == '.'))
         is_hidden = TRUE;
-
-    if (searchbar_text)
-    {
-        gint n = strlen (searchbar_text);
-        gint m = strlen (base_name);
-        if (n > 0)
-        {
-            if (strncmp (base_name, searchbar_text, n < m ? n : m))
-                is_hidden = TRUE;
-        }
-    }
 
     g_free ((gpointer) base_name);
     return is_hidden;
@@ -1391,6 +1401,50 @@ treebrowser_chroot (gchar *directory)
     treebrowser_load_bookmarks ();
 }
 
+static gboolean
+check_empty(gchar *directory)
+{
+    gboolean        is_dir;
+    gchar           *utf8_name = NULL;
+    GSList          *list, *node;
+    gchar           *fname = NULL;
+    gchar           *uri = NULL;
+
+    list = utils_get_file_list (directory, NULL, CONFIG_SORT_TREEVIEW, NULL);
+    if (list != NULL) {
+        foreach_slist_free (node, list) {
+            fname       = node->data;
+            uri         = g_strconcat (directory, fname, NULL);
+            is_dir      = g_file_test (uri, G_FILE_TEST_IS_DIR);
+            utf8_name   = utils_get_utf8_from_locale (fname);
+
+            if (! check_hidden (uri)) {
+                if (is_dir) {
+                    if (! check_empty (uri)) {
+                        g_free (utf8_name);
+                        g_free (uri);
+                        g_free (fname);
+                        return FALSE;
+                    }
+                }
+                else {
+                    if (check_filtered (utf8_name) && check_search (uri)) {
+                        g_free (utf8_name);
+                        g_free (uri);
+                        g_free (fname);
+                        return FALSE;
+                    }
+                }
+            }
+        }
+    }
+
+    g_free (utf8_name);
+    g_free (uri);
+    g_free (fname);
+    return TRUE;
+}
+
 /* Browse given directory - update contents and fill in the treeview */
 static gboolean
 treebrowser_browse (gchar *directory, gpointer parent)
@@ -1444,7 +1498,7 @@ treebrowser_browse (gchar *directory, gpointer parent)
             if (! check_hidden (uri)) {
                 GdkPixbuf *icon = NULL;
 
-                if (is_dir) {
+                if (is_dir && !check_empty (uri)) {
                     if (last_dir_iter == NULL)
                         gtk_tree_store_prepend (treestore, &iter, parent);
                     else {
@@ -1470,7 +1524,7 @@ treebrowser_browse (gchar *directory, gpointer parent)
                     all_hidden = FALSE;
                 }
                 else {
-                    if (check_filtered (utf8_name)) {
+                    if (check_filtered (utf8_name) && check_search (uri)) {
                         icon = get_icon_for_uri (uri);
                         gtk_tree_store_append (treestore, &iter, parent);
                         gtk_tree_store_set (treestore, &iter,
@@ -1821,12 +1875,7 @@ on_menu_expand_all(GtkMenuItem *menuitem, gpointer *user_data)
     if (! path)
     {
         // apply to all items on first level
-        GtkTreeIter iter;
-        gtk_tree_model_get_iter_first (GTK_TREE_MODEL (treestore), &iter);
-
-        path = gtk_tree_model_get_path (GTK_TREE_MODEL (treestore), &iter);
-        while (tree_view_expand_rows_recursive (GTK_TREE_MODEL (treestore), GTK_TREE_VIEW (treeview), path, 0))
-            gtk_tree_path_next (path);
+        expand_all();
     }
     else
     {
@@ -1837,6 +1886,19 @@ on_menu_expand_all(GtkMenuItem *menuitem, gpointer *user_data)
 }
 
 static void
+expand_all()
+{
+    GtkTreePath *path = NULL;
+
+    GtkTreeIter iter;
+    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (treestore), &iter);
+
+    path = gtk_tree_model_get_path (GTK_TREE_MODEL (treestore), &iter);
+    while (tree_view_expand_rows_recursive (GTK_TREE_MODEL (treestore), GTK_TREE_VIEW (treeview), path, 0))
+        gtk_tree_path_next (path);
+}
+
+static void
 on_menu_collapse_all(GtkMenuItem *menuitem, gpointer *user_data)
 {
     GtkTreePath *path = user_data ? gtk_tree_path_copy ((GtkTreePath *) user_data) : NULL;
@@ -1844,12 +1906,7 @@ on_menu_collapse_all(GtkMenuItem *menuitem, gpointer *user_data)
     if (! path)
     {
         // apply to all items on first level
-        GtkTreeIter iter;
-        gtk_tree_model_get_iter_first (GTK_TREE_MODEL (treestore), &iter);
-
-        path = gtk_tree_model_get_path (GTK_TREE_MODEL (treestore), &iter);
-        while (tree_view_expand_rows_recursive (GTK_TREE_MODEL (treestore), GTK_TREE_VIEW (treeview), path, 0))
-            gtk_tree_path_next (path);
+        collapse_all();
     }
     else
     {
@@ -1857,6 +1914,19 @@ on_menu_collapse_all(GtkMenuItem *menuitem, gpointer *user_data)
     }
 
     gtk_tree_path_free (path);
+}
+
+static void
+collapse_all()
+{
+    GtkTreePath *path = NULL;
+
+    GtkTreeIter iter;
+    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (treestore), &iter);
+
+    path = gtk_tree_model_get_path (GTK_TREE_MODEL (treestore), &iter);
+    while (tree_view_collapse_rows_recursive (GTK_TREE_MODEL (treestore), GTK_TREE_VIEW (treeview), path, 0))
+        gtk_tree_path_next (path);
 }
 
 static void
@@ -1987,6 +2057,18 @@ on_searchbar_changed ()
     if (searchbar_text)
         g_free (searchbar_text);
     searchbar_text = g_strdup (gtk_entry_get_text (GTK_ENTRY (searchbar)));
+
+    if (strlen(searchbar_text) > 0) {
+        if (!all_expanded) {
+            expand_all();
+            all_expanded = TRUE;
+        }
+    }
+    else {
+        treeview_clear_expanded();
+        all_expanded = FALSE;
+    }
+
     treeview_update (NULL);
 }
 
