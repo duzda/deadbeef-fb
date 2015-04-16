@@ -2,7 +2,7 @@
     Filebrowser plugin for the DeaDBeeF audio player
     http://sourceforge.net/projects/deadbeef-fb/
 
-    Copyright (C) 2011-2014 Jan D. Behrens <zykure@web.de>
+    Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>
 
     Based on Geany treebrowser plugin:
         treebrowser.c - v0.20
@@ -1360,30 +1360,7 @@ treeview_separator_func (GtkTreeModel *model, GtkTreeIter *iter, gpointer data)
 static gboolean
 treebrowser_checkdir (const gchar *directory)
 {
-    gboolean is_dir;
-#if !GTK_CHECK_VERSION(3,0,0)
-    static const GdkColor red       = { 0, 0xffff, 0xaaaa, 0xaaaa };
-#else
-    static const struct _GdkRGBA red  = { 1.0, 0.67, 0.67, 1.0 };
-#endif
-    static gboolean old_value       = TRUE;
-
-    is_dir = g_file_test (directory, G_FILE_TEST_IS_DIR);
-
-    if (old_value != is_dir) {
-#if !GTK_CHECK_VERSION(3,0,0)
-        gtk_widget_modify_base (GTK_WIDGET (addressbar),
-                        GTK_STATE_NORMAL, is_dir ? NULL : &red);
-#else
-        gtk_widget_override_background_color (GTK_WIDGET (addressbar),
-                        GTK_STATE_NORMAL, is_dir ? NULL : &red);
-#endif
-        old_value = is_dir;
-    }
-
-    if (! is_dir)
-        return FALSE;
-
+    gboolean is_dir = g_file_test (directory, G_FILE_TEST_IS_DIR);
     return is_dir;
 }
 
@@ -1999,7 +1976,7 @@ static void
 on_addressbar_changed ()
 {
     //treeview_clear_expanded ();
-    gchar *uri = get_default_dir ();
+    gchar *uri = g_strdup( gtk_entry_get_text (GTK_ENTRY (gtk_bin_get_child( GTK_BIN (addressbar)))));
     treebrowser_chroot (uri);
     g_free (uri);
 }
