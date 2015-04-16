@@ -41,7 +41,7 @@ function make_package
         | sed s/@SHA1SUM@/${SHA1SUM}/g \
         | sed s/@SHA256SUM@/${SHA256SUM}/g \
         > PKGBUILD
-    mkaurball
+    makepkg --source
     rm -f PKGBUILD
     mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${BUILDROOT}/../
 
