@@ -13,7 +13,7 @@ BUILDROOT="$(pwd)"
 
 SRCTARGET=${BUILDROOT}/../aur/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
 
-wget "https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=${DATE}" -O $SRCTARGET
+wget "https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=${DATE}" -O $SRCTARGET || exit $?
 MD5SUM=$(md5sum ${SRCTARGET} | cut -c -32)
 SHA1SUM=$(sha1sum ${SRCTARGET} | cut -c -40)
 SHA256SUM=$(sha256sum ${SRCTARGET} | cut -c -64)
@@ -41,7 +41,7 @@ function make_package
         | sed s/@SHA1SUM@/${SHA1SUM}/g \
         | sed s/@SHA256SUM@/${SHA256SUM}/g \
         > PKGBUILD
-    makepkg --source -f
+    makepkg --source -f || exit $?
     rm -f "archive.tar.gz?ref=${DATE}"
     mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${BUILDROOT}/../aur/
 
@@ -50,13 +50,30 @@ function make_package
 
     cd ${BUILDROOT}/../aur/
     rm -rf ${AURPACKAGENAME}${AURPACKAGEFLAG}
-    tar -xzf ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz
+    tar -xzf ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz || exit $?
     cd ${AURPACKAGENAME}${AURPACKAGEFLAG}
     echo "> $(pwd)"
-    makepkg -f
-    namcap PKGBUILD
-    namcap ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}-any.pkg.tar.xz
+    makepkg -f || exit $?
+    namcap PKGBUILD || exit $?
+    namcap ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}-any.pkg.tar.xz || exit $?
     cd ${BUILDROOT}
+
+    echo "=============================================================================="
+    echo "Updating AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL} ..."
+
+    cd ${BUILDROOT}/../aur/
+    cd ${AURPACKAGENAME}${AURPACKAGEFLAG}.git
+    git pull || exit $?
+    cp -v ${BUILDROOT}/PKGBUILD ./
+    namcap PKGBUILD || exit $?
+    mksrcinfo || exit $?
+    git status
+    echo "> Press CTRL+C to abort ..."
+    sleep 5
+    git commit -a -m "release ${DATE}" || exit $?
+    git push
+    cd ${BUILDROOT}
+
 }
 
 make_package "deadbeef-plugin-fb" ""      1 "gtk2" "--disable-gtk3"
