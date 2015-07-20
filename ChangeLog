@@ -1,0 +1,628 @@
+commit 6d101eef4c91516e0fa2b682884eec12c6dd80ab
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Jul 20 13:09:31 2015 +0200
+
+    Switch to Gitlab repo for AUR PKGBUILD, fix build issues
+
+commit b023b58fb7fbd4d41d10f1bd4ed18bb66eb88bb9
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Jul 20 12:40:56 2015 +0200
+
+    Searchbar: improve behavior (do not expand full tree, fix bugs), add search delay (only apply search after some time), add GTK 3.6+ searchbar
+    
+    Thanks to Tobias and 420MuNkEy for patches/ideas!
+
+commit 7dc4441bd93ba60dbcb8936825d31e8245a953ce
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Sat Nov 29 19:36:32 2014 +0100
+
+    better search
+    
+    - expand all entries on search
+    - collapse all entries on search clear
+    - search full filepath
+
+commit 98a1458a61f93ec4414c8efec246b248fb390806
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Apr 16 22:36:32 2015 +0200
+
+    Update AUR build script to use 'makepkg --source'
+
+commit 937593855c2f51b10f9a7b72150bbab66f7fb56a
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Apr 16 22:19:24 2015 +0200
+
+    Remove coloring for invalid paths entered into the addressbar (was not used anyway, and GTK deprecated some function)
+
+commit e6ee35f17cab07e593142e957389443f0b836c67
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Oct 29 09:03:46 2014 +0100
+
+    Fix PKGBUILD info, add sha256sum
+
+commit e506214d43d09a4d9f5c083e882f4f037604b4e0
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Oct 28 09:42:49 2014 +0100
+
+    Fix crash when adding files via toolbar button (g_list_free called twice)
+
+commit 364e99d714412ad625cc862e2ebbc85e33523a02
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Oct 28 09:21:47 2014 +0100
+
+    Add debug option to configure.ac
+
+commit e336a66c1ad808dfe913b3c87f50600f12c139c7
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Oct 28 00:46:29 2014 +0100
+
+    Fix AUR build stuff again
+
+commit 21a7f1f11765df75ed78eee734ea303f4ae08ea0
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Oct 27 23:59:10 2014 +0100
+
+    Fix AUR build, add GTK2 and GTK3 versions
+
+commit de3ba375751b3d7b820166cf0a0f8ec3261d8e9b
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Oct 27 21:37:10 2014 +0100
+
+    Fix PKGBUILD
+
+commit 93eab21271a1a7f0696fd4487e1280ff27bafbb1
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Oct 27 20:51:48 2014 +0100
+
+    Add AUR support
+
+commit 9fbe12b45ea5d66eb13e288e8b659f403825989a
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Oct 14 09:08:20 2014 +0200
+
+    Fix makerelease.sh to include scripts
+
+commit cf7af28cbdc279534b3be9303e65c6770f3a3350
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Oct 14 09:07:53 2014 +0200
+
+    Add search bar to quickly filter treeview contents
+
+commit a6bda6f8341c085fcc907a6f238f0114159f6606
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Oct 7 22:21:55 2014 +0200
+
+    Build GTK3 by default
+
+commit f2e722c1e21de193ed70ea7e2ae3da16425e1bfd
+Author: Jan Behrens <zykure@web.de>
+Date:   Fri Oct 3 16:06:04 2014 +0200
+
+    Fix missing progress dialog when adding stuff to a playlist; remove "enable" option in newer API versions
+
+commit 86989bb6e8d0aa280b7a4fe3383086602f491b2b
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Oct 2 08:50:27 2014 +0200
+
+    Fix missing config options in the GUI dialog
+
+commit 208595acecc88beb3ea14900fe9d3fb98991d68b
+Author: Jan Behrens <zykure@web.de>
+Date:   Sun Sep 14 20:45:46 2014 +0200
+
+    fix weird behavior of popup menu shortcuts
+
+commit f3f73f742d17d48f45ea1e5c60a6d52a7f6b6695
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Sep 11 22:08:52 2014 +0200
+
+    Make path to bookmarks file a user option; move bookmark icons to root of the directory tree (i.e. remove virtual "bookmarks" icon)
+
+commit 3d256d011ab2c2f48d3f42eeb3f80a070f1a02d8
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Sep 10 22:49:31 2014 +0200
+
+    Combine default folder and address bar
+
+commit 3d551f1ee3df60d8c9a0190c79b1a6fe628dacc5
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Sep 4 23:27:28 2014 +0200
+
+    Allow treeview to be sorted by date instead of name
+
+commit 7112e51e5984f8f3fa27c684b13013ab1300c635
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Sep 3 20:25:13 2014 +0200
+
+    Support multiple default directories (use combobox to select one)
+
+commit dead24e069fc3b2ba81a37692da746e1f738a162
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Sep 3 19:33:10 2014 +0200
+
+    Add middle-click action; add some options: treelines, icon & font size
+
+commit 409f78906e7406d70ac7cc22bf9f378a030b686c
+Author: Jan Behrens <zykure@web.de>
+Date:   Sun Aug 31 21:29:22 2014 +0200
+
+    Fix GTK3 issues (deprecated functions, gtk stylesheet)
+
+commit fea58f4258b1586d5a847507a700325b4621f4e8
+Author: Jan Behrens <zykure@web.de>
+Date:   Sun Mar 16 17:28:57 2014 +0100
+
+    version 0.7
+
+commit 787d478c81543e0393dbbedaef85ef64b8907c61
+Author: Jan Behrens <zykure@web.de>
+Date:   Sun Mar 16 13:58:21 2014 +0100
+
+    Add missing g_free call
+
+commit c63ccb5392bf7a2172fab14144b19b1af9cec242
+Author: Jan Behrens <zykure@web.de>
+Date:   Sun Mar 16 12:25:44 2014 +0100
+
+    Get rid of all warnings (changed compiler flags to include -Werror); apply theme in a non-deprecated way in GTK3
+
+commit 0cf4b65b42a23f42594c297b7b74952d71ad3ba5
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Mar 12 17:40:02 2014 +0100
+
+    Fix expanding/collapsing rows a bit; add option to only expand next level of tree items
+
+commit 407ca02522b8746857e9af24863bbb25110c69bc
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Mar 12 17:07:56 2014 +0100
+
+    Make "Expand all" and "Collapse all" popup menu items correctly expand/collapse rows recursively
+    NOTE: If clicking on some item for the menu, only rows below that item will be expanded/collapsed
+
+commit 6cd6a9a3e7ba1c53e4eef1f6f11339316394e23a
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Mar 11 23:56:38 2014 +0100
+
+    Keep expanded rows setting even when using the toolbar buttons
+
+commit e95449d12baff1d53ef9347109328caba0c625e5
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Mar 11 22:01:09 2014 +0100
+
+    Improve handling of multiple selections
+    - popup menu now better handles multiple files (checks if file exists etc.)
+    - playlist titles will now contain all selected folders if automatic naming is enabled
+    - plus some under-the-hood work
+
+commit 4cd6162a4594e416257cf574906981fb9e7074f1
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Mar 10 17:27:30 2014 +0100
+
+    Make ctrl-shift-select operations to behave a bit more normal; lose selection when dragging from a non-selected item
+
+commit 886f32ba3e8f78fe569def3d117e60ff7a7b4087
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Mar 10 00:22:39 2014 +0100
+
+    Remove redundant code (this also improves responsiveness a bit!)
+
+commit 6fc34cc9dd9ae16b1c59c494693c25f7fa907612
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Mar 10 00:05:06 2014 +0100
+
+    Use URIs instead of filenames for expanded-rows handling; add user-option to save expanded rows over sessions (enabled by default)
+
+commit 3bb7169cdb9d5f66e376c5edf02d0ed5ad968a55
+Author: Jan Behrens <zykure@web.de>
+Date:   Sun Mar 9 20:29:35 2014 +0100
+
+    Add shift-select feature to add an item range to a selection
+    NOTE 1: Unselecting ranges with shift+click is not supported yet; use click or ctrl-click to unselect items
+    NOTE 2: shift-select is limited to items at the same depth in the tree view (otherwise segfaults occur)
+
+commit 42016cfec8bb13a1d72e42c415e73ac8d7bed7fd
+Author: Jan Behrens <zykure@web.de>
+Date:   Sun Mar 9 15:43:25 2014 +0100
+
+    Fix drag&drop handling with multiple selections by manually handling mouse events
+
+commit 9a63191daf1b3095fb053df5d6b9ca9d6680af1f
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Mar 8 22:08:24 2014 +0100
+
+    Allow popup menu to handle multiple corrections correctly; fix issue with not updating playlists after adding files
+
+commit 55d5ecb770c923d4cf343213b361430b63123931
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Mar 8 16:39:27 2014 +0100
+
+    Add feature to change the Gtk style of the tree view
+
+commit 70c6227828572d76fcfb4317ccb114c3876d9cbf
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Mar 8 14:45:24 2014 +0100
+
+    Added session-restore and multiple-select features:
+    * Expanded rows will now be remembered over sessions, and restored any time a folder is read in by the treebrowser
+    * One can now select multiple entries in the treebrowser view (using the Ctrl key), and add all selected items to the playlist
+
+commit bc31e3d99b60bf7a1b3bcc954d94e75a46c56847
+Author: Alexey Yakovenko <waker@users.sourceforge.net>
+Date:   Tue Dec 3 22:10:26 2013 +0100
+
+    added gtk2.12/gtk3 compat; removed unnecessary clutter from configure.ac and Makefile.am; deleted the unused and wrong w_destroy
+
+commit 61ef8e9b52109019575e7942679cab458dc76f44
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Nov 7 22:50:14 2013 +0100
+
+    Another fix for the new design mode (removing & re-adding the widget)
+
+commit cb5290cf9943c3c4c5d2cc3763975393ee9e5aa8
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Nov 7 22:10:20 2013 +0100
+
+    Update plugin version to 0.6
+
+commit 1ce0130922bdf2c3a8e5c0ed8f48debb45e99e63
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Nov 7 22:07:13 2013 +0100
+
+    Fix treeview in design mode
+
+commit 3f28072300847e154a77c7614b0f3c703c8d9ff1
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Nov 7 21:54:13 2013 +0100
+
+    Make filebrowser compatible with latest deadbeef master (thanks waker!)
+
+commit d198e2dc86595a367cba5a0494b2eace87e295bf
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Nov 7 17:26:00 2013 +0100
+
+    Adding debug output
+
+commit dc2dcf345c4e31050bf55ea305ec6393e30b3f36
+Author: Jan Behrens <zykure@web.de>
+Date:   Sun Oct 20 19:05:27 2013 +0200
+
+    Updating API to use 0.6 deadbeef GUI (based on patch provided by waker)
+    NOTE: The new API makes use of the improved interface handling in deadbeef 0.6. Do not use the old "quick & dirty" method anymore!
+
+commit 777b52aeb7b04fd8769628a539f3e3273f0e2c6f
+Author: Jan Behrens <zykure@web.de>
+Date:   Sun Oct 20 18:49:45 2013 +0200
+
+    Adding Makefile.unix
+
+commit 1dd4617a4e174e88be69f961372d15584d3bf13b
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Oct 12 17:48:39 2013 +0200
+
+    improve makerelease.sh (will now add extra .so files)
+
+commit c6bc0ac6bf2e147f76c59daaeedcc3ca1389e7ad
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Oct 12 17:09:59 2013 +0200
+
+    fixing up interface - *should* work even if other plugins changed the UI before, but could not test it
+
+commit 038d8d47a2e8bbadb24e676c3f2ec22398b760c7
+Merge: c1d1d97 7da1ce0
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Oct 12 16:57:59 2013 +0200
+
+    Merge branch 'oldmaster'
+    
+    Conflicts:
+    	filebrowser.c
+
+commit 7da1ce0920ec7df105fa9d8bf6e469a166f5398c
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Oct 12 16:54:21 2013 +0200
+
+    Fix problems with other plugins (namely Infobar plugin)
+
+commit c1d1d97ca2c1cb73db00206eb4dd7ea411ed5e9a
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Oct 12 16:12:03 2013 +0200
+
+    clean up some code
+
+commit 16a5585193b7510c60af124079e09ad56c74d478
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Oct 12 13:25:05 2013 +0200
+
+    update code for deadbeef v0.6.0
+
+commit bea84464ad4ba32c8b0c15fceeade71013d20c82
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Mon Aug 27 21:52:56 2012 +0200
+
+    Added automatic creation of AUTHORS and ChangeLog files to autogen.sh
+
+commit 3a956e41fbaf59748f762383983b31707f5317fe
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Mon Aug 27 20:40:05 2012 +0200
+
+    Fixed bugs in GTK interface with current deadbeef master
+
+commit 42dec0b7754d2d7e3c4d63ed68f25d29c0b5cda2
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Nov 20 22:58:45 2011 +0100
+
+    Small changes to makerelease.sh
+
+commit c22313891ea00eb2e830e7e2367e77a88fa3e14b
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Nov 20 22:41:42 2011 +0100
+
+    Added script to create release packages (source & binary)
+
+commit e554f6f8dc19b161aae48fb3080ba4fe96524905
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Nov 20 13:34:44 2011 +0100
+
+    Added support fot GTK3 ui in deadbeef
+
+commit 721b3030020c9c0bb553ea5d7d49acfa692581e8
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sat May 14 20:30:49 2011 +0200
+
+    Update to current Deadbeef API
+
+commit 2398fc57d8dcbce65310d5740aba3058af0624b0
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Tue Apr 26 01:18:09 2011 +0200
+
+    Upgrade to current deadbeef API, fixed playlist handling
+
+commit 9b78371cbcf14e8631ec9b30e188f1d49b222c7e
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Apr 17 22:35:20 2011 +0200
+
+    Update to current deadbeef API
+
+commit 8757fb7c7b39f8f0edf20a5fdae0255ef47aeb82
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Tue Apr 5 23:31:57 2011 +0200
+
+    Make use of "gtkui.name_playlist_from_folder" option when creating to new playlist
+
+commit bf0afa9d56ba3e42b0c10004265b450ac623b8ae
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Apr 3 17:17:48 2011 +0200
+
+    Some minor changes in automake/autoconf routines
+
+commit e82700faa69ab07b5b50275ca5f1acdf823e1250
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Apr 3 17:08:00 2011 +0200
+
+    Restructured plugin config dialog
+
+commit 59bbedfd5ce0c2c1d49b442d77de3a9846d2cd60
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Apr 3 17:02:03 2011 +0200
+
+    Added cache routine to coverart handling
+    - When a coverart icon is requested, the plugin now first looks inside its cache; if the corresponding icon is not found, a new cache entry is created. The icons are cached at their final image size in PNG format, so the cache should be really fast compared to directly loading the coverart images, especially if large files are used. The cache also is updated when the original file changes.
+    - The coverart icon size can now be changed by the user
+
+commit a27f696bda0766021ecc4cf5ac928b549567a23e
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Apr 3 14:38:44 2011 +0200
+
+    Big code cleanup
+    - Restructured all code
+    - Added filebrowser.h
+    - Checked for memory leaks and the like
+
+commit 5df0958d8668e7438e136014e1c419dd5916b127
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Fri Apr 1 13:16:11 2011 +0200
+
+    Update to current deadbeef API
+
+commit ddcfef56f46e5b3a074c9556264a53fbd7618ed0
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 31 22:55:27 2011 +0200
+
+    Fixed typo in userinstall.sh
+
+commit 1e31047cc8c054ba4d5721725bf685f42343f3c5
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 31 22:53:31 2011 +0200
+
+    Fixed wrong paths in quickinstall.sh & userinstall.sh
+
+commit 9b625200aa30b3a77753cca11139367819875196
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 31 21:38:08 2011 +0200
+
+    Fixed regression in which disabled playlist headers were visible with the filebrowser plugin activated
+
+commit 0e4e2de9c6539df2726f0cf068af29ace78fccc7
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 31 16:49:11 2011 +0200
+
+    Removed 'config.h' from autoconf procedure
+
+commit 1901149bd016d6b8bab24a70c49aae5e2087b7fc
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 31 16:38:54 2011 +0200
+
+    Moved to AUTOCONF/AUTOMAKE build system
+    - Plugin named ddb_misc_filebrowser is installed into $prefix/lib with "make install"
+    - It can also be quickly installed into /usr/local with "quickinstall.sh"
+    - The "userinstall.sh" script on the other hand installs into $home/.local/lib/deadbeef
+
+commit 3a2e9fd4170bd0066ceea80bcf77bf632e4d5ac6
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 31 15:28:05 2011 +0200
+
+    Renamed plugin to ddb_misc_filebrowser, according to "official" naming scheme
+
+commit a45d510ea99717f200307ac559ab6ca3afd146be
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Wed Mar 30 20:15:02 2011 +0200
+
+    Implemented "restore interface" function
+    Enabling/disabling the plugin now works at runtime, no restart needed anymore!
+
+commit 12b581827ad4c2d0c8e40ee6f1db5c6e9bf651c9
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Tue Mar 29 22:21:53 2011 +0200
+
+    Fixed memory leak
+
+commit 47a2dbc29ed0fc3462c3efb8716f0a038e43b254
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Tue Mar 29 22:15:33 2011 +0200
+
+    Fixed tooltip handling on URIs with an ampersand in them
+    Tooltips now also can show custom text instead of the URI, e.g. a special message on empty directories
+
+commit d97bb852aeaef496a9402253def68e122d339b28
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Tue Mar 29 21:04:05 2011 +0200
+
+    Implemened proper update checking on changed config
+    The filebrowser now only is updated if changes made by the user will affect it, not on every change as before.
+
+commit 95a2ed9d1ae385d5c1d46622a865895f30a1fb2d
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Mar 27 18:12:42 2011 +0200
+
+    Fixed wrong path in install.sh
+
+commit 931a7590903cf1e77658fd06bf0d5bd1e321c402
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Sun Mar 27 18:07:32 2011 +0200
+
+    Update to current deadbeef-devel
+
+commit 953ea808c2175524ffe9d083e679f7af1532a33d
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Fri Mar 25 22:41:54 2011 +0100
+
+    [URGENT] Removed check if plugin was loaded before, as it prevents loading at all
+
+commit 81dff652e7625023ab1f8ad65d9a29b7567f57f7
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Fri Mar 25 22:00:17 2011 +0100
+
+    Some minor changes
+    * Plugin now checks if it already has been loaded before to avoid executing it twice if installed in multiple directories (e.g. /usr/local and ~/.local)
+    * Fixed website in plugin description
+    * Changed CFLAGS
+    * "make install" now uses $PREFIX
+    * Added "install.sh" script which installs the plugin into $HOME
+
+commit 2427adb27c8bb7fbfb01e4a19b79df46a9845741
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 24 14:28:45 2011 +0100
+
+    Added README file
+
+commit 1010dffb4e62af42e4dee40d1f2aac2a36dcc416
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 24 14:11:08 2011 +0100
+
+    Fixed refresh behaviour, plus minor changes
+    - Treeview now memorizes expanded rows properly - all expanded rows are restored on refresh, but not on directory changes
+    - Added 'install' target to Makefile, which installs the plugin file into $HOME/.local/lib/deadbeef/
+
+commit 138bba2525fd776bf3e01e781d2b45b374380c01
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Mon Mar 21 18:27:58 2011 +0100
+
+    Various minor changes
+    - Added 'release' target to Makefile that creates an archive with all necessary files
+    - Treeview now remebers expanded rows and restores them on refresh, even across directory changes - FIXME: Still doesn't work on expanded subdirectories!
+    - 'Add' button in toolbar now is disabled if nothing is selected
+
+commit ce0b1eaba91997f78dac43578e7606652a7a9927
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Fri Mar 18 21:58:02 2011 +0100
+
+    Added missing files - how could that happen?!
+
+commit a2c79b0ff761deaf8c85c4ae95b8c52d6ef65ab2
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Fri Mar 18 21:56:26 2011 +0100
+
+    Removed internal variables system because it triggered some unpleasant bugs
+    - The code now uses the config directly (as before)
+    - The update function is now called from g_idle_add() on config_changed event
+    - Therefore the treeview now is updated on-the-fly, but hopefully without crashing
+
+commit 3a5ad5e20b8f95743cfd7050eb5c92815b39b92e
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Fri Mar 18 21:09:34 2011 +0100
+
+    Fixed crashes when on_config_changed events occured too fast, plus some minor changes
+    - The on_config_changed function now checks if the changed settings apply to the plugin and ignores all other. The treeview should be updated sometime, e.g. when filter settings are changed, but this is still buggy and therefore disabled.
+    - Handling of the config file was changed, too (now internal variables are used, which are changed only on stopping the plugin).
+    - All utils_* functions were moved to utils.c
+
+commit 3e86591438dcb990587a2cf4c4465ccbf4f729f9
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 17 23:26:38 2011 +0100
+
+    Fixed some random crashes on startup
+    Also, the tree now shows "Contents hidden" on directories when their contents are hidden (instead of "Empty", because they're not)
+
+commit d692f61884e9b3f71012ac84f8bb18a56091d522
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 17 14:36:01 2011 +0100
+
+    Fixed "empty directory" bug
+    Now a directory is considered empty if all files inside are filtered or hidden.
+
+commit dc9bd0ae2b599fc6d7867b86335cd0062fe3f6ca
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Thu Mar 17 12:16:08 2011 +0100
+
+    Minor bugfixes
+
+commit aff94e687688ec9a2b029e3c7538676ccd97bc52
+Author: waker <wakeroid@gmail.com>
+Date:   Wed Mar 16 21:24:45 2011 +0100
+
+    fixed Makefile to use installed deadbeef.h and gtkui_api.h fixed plugin init procedure to run on gtk thread (and not crash) added support.c and support.h (for gettext and lookup_widget) added output .so file to make clean target
+
+commit af24045c1832dce7f82caf50ef1fbf9f1d54e44e
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Wed Mar 16 18:47:13 2011 +0100
+
+    Some minor changes
+
+commit bda0de284f449e292f4040d89f657159d10cd682
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Wed Mar 16 14:02:28 2011 +0100
+
+    Some code restructuring
+
+commit 5455c5c106d77dcdbcfbf2029f74058bac1a0957
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Wed Mar 16 13:09:06 2011 +0100
+
+    A whole nunch improvements and bugfixes
+    - Fixed startup behaviour (start, stop, connect, disconnect)
+    - Fixed file filter to account for both uppercase and lowercase file extensions
+    - Added update event on config change
+    - Added autofilter that filters files according to activated decoder plugins
+    - Added support for adding files to new playlist from contextmenu
+
+commit 035397e4a3ec053ac259ae55feca19b3ba6a75d8
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Tue Mar 15 21:43:16 2011 +0100
+
+    Added license info
+
+commit e92a4d52d2966bc875472ff3d6ba211f97964c07
+Author: Jan D. Behrens <zykure@web.de>
+Date:   Tue Mar 15 21:41:38 2011 +0100
+
+    Initial import of existing code

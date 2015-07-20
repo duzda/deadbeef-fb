@@ -12,7 +12,7 @@ url="https://gitlab.com/zykure/deadbeef-fb"
 license=(GPL)
 depends=('deadbeef>=0.6', @PACKAGEDEPS@)
 backup=()
-source=(https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=@PACKAGEVER@)
+source=('https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=@PACKAGEVER@')
 md5sums=('@MD5SUM@')
 sha1sums=('@SHA1SUM@')
 sha256sums=('@SHA256SUM@')

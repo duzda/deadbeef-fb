@@ -9,9 +9,9 @@ fi
 
 FLAG=$2
 
-BUILDROOT=`pwd`
+BUILDROOT="$(pwd)"
 
-SRCTARGET=${BUILDROOT}/../${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
+SRCTARGET=${BUILDROOT}/../aur/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
 
 wget "https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=${DATE}" -O $SRCTARGET
 
@@ -42,17 +42,18 @@ function make_package
         | sed s/@SHA1SUM@/${SHA1SUM}/g \
         | sed s/@SHA256SUM@/${SHA256SUM}/g \
         > PKGBUILD
-    makepkg --source
-    git status
-    mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${BUILDROOT}/../
+    makepkg --source -f
+    rm PKGBUILD
+    mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${BUILDROOT}/../aur/
 
     echo "=============================================================================="
     echo "Testing AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL} ..."
 
-    cd ${BUILDROOT}/../
+    cd ${BUILDROOT}/../aur/
     rm -rf ${AURPACKAGENAME}${AURPACKAGEFLAG}
     tar -xzf ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz
     cd ${AURPACKAGENAME}${AURPACKAGEFLAG}
+    echo "> $(pwd)"
     makepkg -f
     namcap PKGBUILD
     namcap ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}-any.pkg.tar.xz
