@@ -40,6 +40,5 @@ POTFILES
 stamp-it
 po/Makevars.template
 *.so
-AUTHORS
-ChangeLog
 /.project
+PKGBUILD

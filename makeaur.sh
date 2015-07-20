@@ -14,7 +14,6 @@ BUILDROOT="$(pwd)"
 SRCTARGET=${BUILDROOT}/../aur/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
 
 wget "https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=${DATE}" -O $SRCTARGET
-
 MD5SUM=$(md5sum ${SRCTARGET} | cut -c -32)
 SHA1SUM=$(sha1sum ${SRCTARGET} | cut -c -40)
 SHA256SUM=$(sha256sum ${SRCTARGET} | cut -c -64)
@@ -43,7 +42,7 @@ function make_package
         | sed s/@SHA256SUM@/${SHA256SUM}/g \
         > PKGBUILD
     makepkg --source -f
-    rm PKGBUILD
+    rm -f "archive.tar.gz?ref=${DATE}"
     mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${BUILDROOT}/../aur/
 
     echo "=============================================================================="
