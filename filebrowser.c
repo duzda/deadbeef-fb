@@ -4,6 +4,10 @@
 
     Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>
 
+    With contributions by:
+        Tobias Bengfort <tobias.bengfort@posteo.de>
+        420MuNkEy
+
     Based on Geany treebrowser plugin:
         treebrowser.c - v0.20
         Copyright 2010 Adrian Dimitrov <dimitrov.adrian@gmail.com>
@@ -25,7 +29,7 @@
 
 
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    79
+#define PLUGIN_VERSION_MINOR    80
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -78,6 +82,7 @@ static const gchar *        CONFIG_COLOR_FG_SEL         = NULL;
 static gint                 CONFIG_ICON_SIZE            = 24;
 static gint                 CONFIG_FONT_SIZE            = 0;
 static gboolean             CONFIG_SORT_TREEVIEW        = TRUE;
+static gint                 CONFIG_SEARCH_DELAY         = 1000;
 
 /* Global variables */
 static DB_misc_t            plugin;
@@ -109,7 +114,8 @@ static gint                 mouseclick_lastpos[2]       = { 0, 0 };
 static gboolean             mouseclick_dragwait         = FALSE;
 static GtkTreePath *        mouseclick_lastpath         = NULL;
 
-static gboolean             all_expanded                = FALSE;
+//static gboolean             all_expanded                = FALSE;
+static gint64               last_searchbar_change       = 0;
 
 
 /* Helper functions */
@@ -184,6 +190,7 @@ save_config (void)
     deadbeef->conf_set_int (CONFSTR_FB_ICON_SIZE,           CONFIG_ICON_SIZE);
     deadbeef->conf_set_int (CONFSTR_FB_FONT_SIZE,           CONFIG_FONT_SIZE);
     deadbeef->conf_set_int (CONFSTR_FB_SORT_TREEVIEW,       CONFIG_SORT_TREEVIEW);
+    deadbeef->conf_set_int (CONFSTR_FB_SEARCH_DELAY,        CONFIG_SEARCH_DELAY);
 
     if (CONFIG_DEFAULT_PATH)
         deadbeef->conf_set_str (CONFSTR_FB_DEFAULT_PATH,    CONFIG_DEFAULT_PATH);
@@ -256,6 +263,7 @@ load_config (void)
     CONFIG_ICON_SIZE            = deadbeef->conf_get_int (CONFSTR_FB_ICON_SIZE,           24);
     CONFIG_FONT_SIZE            = deadbeef->conf_get_int (CONFSTR_FB_FONT_SIZE,           0);
     CONFIG_SORT_TREEVIEW        = deadbeef->conf_get_int (CONFSTR_FB_SORT_TREEVIEW,       TRUE);
+    CONFIG_SEARCH_DELAY         = deadbeef->conf_get_int (CONFSTR_FB_SEARCH_DELAY,        1000);
 
     CONFIG_DEFAULT_PATH         = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_DEFAULT_PATH,   DEFAULT_FB_DEFAULT_PATH));
     CONFIG_FILTER               = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_FILTER,         DEFAULT_FB_FILTER));
@@ -308,7 +316,8 @@ load_config (void)
         "fgcolor_sel:       %s \n"
         "icon_size:         %d \n"
         "font_size:         %d \n"
-        "sort_treeview:     %d \n",
+        "sort_treeview:     %d \n"
+        "search_delay:      %d \n",
         CONFIG_ENABLED,
         CONFIG_HIDDEN,
         CONFIG_DEFAULT_PATH,
@@ -330,7 +339,8 @@ load_config (void)
         CONFIG_COLOR_FG_SEL,
         CONFIG_ICON_SIZE,
         CONFIG_FONT_SIZE,
-        CONFIG_SORT_TREEVIEW
+        CONFIG_SORT_TREEVIEW,
+        CONFIG_SEARCH_DELAY
         );
 }
 
@@ -866,7 +876,10 @@ create_sidebar (void)
     GtkWidget           *scrollwin;
     GtkWidget           *toolbar;
     GtkWidget           *wid, *button_add;
-    GtkWidget           *button_go, *button_clear;
+    GtkWidget           *button_go;
+#if !GTK_CHECK_VERSION(3,6,0)
+    GtkWidget           *button_clear;
+#endif
     GtkTreeSelection    *selection;
 
     treeview            = create_view_and_model ();
@@ -883,11 +896,17 @@ create_sidebar (void)
     sidebar_hbox_search = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     addressbar          = gtk_combo_box_text_new_with_entry ();
 #endif
+#if !GTK_CHECK_VERSION(3,6,0)
     searchbar           = gtk_entry_new ();
+#else
+    searchbar           = gtk_search_entry_new ();
+#endif
     selection           = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
     scrollwin           = gtk_scrolled_window_new (NULL, NULL);
-    button_go           = gtk_button_new_with_label (_(" Go! "));
-    button_clear        = gtk_button_new_with_label (_(" Clear "));
+    button_go           = gtk_button_new_with_label (_("Go!"));
+#if !GTK_CHECK_VERSION(3,6,0)
+    button_clear        = gtk_button_new_with_label (_("Clear"));
+#endif
 
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrollwin),
                                     GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
@@ -950,7 +969,9 @@ create_sidebar (void)
     gtk_box_pack_start (GTK_BOX (sidebar_hbox_address), button_go,  FALSE, TRUE, 0);
 
     gtk_box_pack_start (GTK_BOX (sidebar_hbox_search), searchbar, TRUE, TRUE, 1);
+#if !GTK_CHECK_VERSION(3,6,0)
     gtk_box_pack_start (GTK_BOX (sidebar_hbox_search), button_clear,  FALSE, TRUE, 0);
+#endif
 
     gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), sidebar_hbox_address, FALSE, TRUE, 1);
     gtk_box_pack_start (GTK_BOX (sidebar_vbox_bars), sidebar_hbox_search, FALSE, TRUE, 1);
@@ -967,8 +988,12 @@ create_sidebar (void)
     g_signal_connect (treeview,     "row-collapsed",        G_CALLBACK (on_treeview_row_collapsed),         NULL);
     g_signal_connect (treeview,     "row-expanded",         G_CALLBACK (on_treeview_row_expanded),          NULL);
     g_signal_connect (button_go,    "clicked",              G_CALLBACK (on_addressbar_changed),             NULL);
+#if !GTK_CHECK_VERSION(3,6,0)
     g_signal_connect (searchbar,    "changed",              G_CALLBACK (on_searchbar_changed),              NULL);
     g_signal_connect (button_clear, "clicked",              G_CALLBACK (on_searchbar_cleared),              NULL);
+#else
+    g_signal_connect (searchbar,    "search-changed",       G_CALLBACK (on_searchbar_changed),              NULL);
+#endif
 
     gtk_widget_show_all (sidebar_vbox);
 }
@@ -1173,19 +1198,29 @@ check_filtered (const gchar *base_name)
 static gboolean
 check_search (const gchar *filename)
 {
-    const gchar *sub_path = g_strsplit (filename, addressbar_last_address, 2)[1];
     gboolean is_searched = TRUE;
 
-    if (searchbar_text) {
+    if (searchbar_text)
+    {
+        gchar **sub_path = g_strsplit (filename, addressbar_last_address, 2);
+
         gint n = strlen (searchbar_text);
-        gint m = strlen (sub_path);
-        if (n > 0) {
-            if (g_strstr_len (g_utf8_casefold(sub_path, m), m, g_utf8_casefold(searchbar_text, n)) == NULL)
+        gint m = strlen (sub_path[1]);
+        if (n > 0)
+        {
+            const gchar *path = g_utf8_casefold (sub_path[1], m);
+            const gchar *text = g_utf8_casefold (searchbar_text, n);
+
+            if (g_strstr_len (path, m, text) == NULL)
                 is_searched = FALSE;
+
+            g_free ((gpointer) path);
+            g_free ((gpointer) text);
         }
+
+        g_strfreev (sub_path);
     }
 
-    g_free ((gpointer) sub_path);
     return is_searched;
 }
 
@@ -1414,9 +1449,11 @@ check_empty(gchar *directory)
     if (list != NULL) {
         foreach_slist_free (node, list) {
             fname       = node->data;
-            uri         = g_strconcat (directory, fname, NULL);
+            uri         = g_strconcat (directory, G_DIR_SEPARATOR_S, fname, NULL);
             is_dir      = g_file_test (uri, G_FILE_TEST_IS_DIR);
             utf8_name   = utils_get_utf8_from_locale (fname);
+
+            trace("uri=%s hidden=%d filtered=%d searched=%d\n",uri,check_hidden (uri),check_filtered (utf8_name),check_search (uri));
 
             if (! check_hidden (uri)) {
                 if (is_dir) {
@@ -1499,8 +1536,9 @@ treebrowser_browse (gchar *directory, gpointer parent)
                 GdkPixbuf *icon = NULL;
 
                 if (is_dir && !check_empty (uri)) {
-                    if (last_dir_iter == NULL)
+                    if (last_dir_iter == NULL) {
                         gtk_tree_store_prepend (treestore, &iter, parent);
+                    }
                     else {
                         gtk_tree_store_insert_after (treestore, &iter, parent, last_dir_iter);
                         gtk_tree_iter_free (last_dir_iter);
@@ -2051,32 +2089,56 @@ on_addressbar_changed ()
     g_free (uri);
 }
 
-static void
-on_searchbar_changed ()
+static gboolean
+on_searchbar_timeout ()
 {
+    if (last_searchbar_change == 0)
+        return FALSE;
+
+    // avoid calling this function too often as it is quite expensive
+    gint64 now = g_get_real_time ();
+    if (now - last_searchbar_change < 1000*CONFIG_SEARCH_DELAY)  // time given in usec
+        return TRUE;
+    last_searchbar_change = 0;
+
+    // make the current search text public
     if (searchbar_text)
         g_free (searchbar_text);
     searchbar_text = g_strdup (gtk_entry_get_text (GTK_ENTRY (searchbar)));
 
-    if (strlen(searchbar_text) > 0) {
-        if (!all_expanded) {
-            expand_all();
+    trace("search: %s\n",searchbar_text);
+/*
+    // expand all tree items to search everywhere - FIXME this kills usability on large trees!
+    if (strlen (searchbar_text) > 0) {
+        if (! all_expanded) {
+            expand_all ();
             all_expanded = TRUE;
         }
     }
     else {
-        treeview_clear_expanded();
+        treeview_clear_expanded ();
         all_expanded = FALSE;
     }
-
-    treeview_update (NULL);
+*/
+    g_idle_add (treeview_update, NULL);
+    return FALSE;  // stop timeout
 }
 
+static void
+on_searchbar_changed ()
+{
+    if (last_searchbar_change == 0)
+        last_searchbar_change = g_get_real_time ();
+    g_timeout_add (100, on_searchbar_timeout, NULL);
+}
+
+#if !GTK_CHECK_VERSION(3,6,0)
 static void
 on_searchbar_cleared ()
 {
     gtk_entry_set_text (GTK_ENTRY (searchbar), "");
 }
+#endif
 
 
 /* TREEVIEW EVENTS */
@@ -2350,35 +2412,7 @@ on_treeview_changed (GtkWidget *widget, gpointer user_data)
     if (user_data)
         gtk_widget_set_sensitive (GTK_WIDGET (user_data), has_selection);
 }
-/*
-static void
-on_treeview_row_activated (GtkWidget *widget, GtkTreePath *path,
-                GtkTreeViewColumn *column, gpointer user_data)
-{
-    GtkTreeIter     iter;
-    gchar           *uri;
 
-    gtk_tree_model_get_iter (GTK_TREE_MODEL (treestore), &iter, path);
-    gtk_tree_model_get (GTK_TREE_MODEL (treestore), &iter,
-                    TREEBROWSER_COLUMN_URI, &uri, -1);
-
-    if (uri == NULL)
-        return;
-
-    if (g_file_test (uri, G_FILE_TEST_IS_DIR)) {
-        if (CONFIG_CHROOT_ON_DCLICK)
-            treebrowser_chroot (uri);
-        else {
-            if (gtk_tree_view_row_expanded (GTK_TREE_VIEW (widget), path))
-                gtk_tree_view_collapse_row (GTK_TREE_VIEW (widget), path);
-            else
-                gtk_tree_view_expand_row (GTK_TREE_VIEW (widget), path, FALSE);
-        }
-    }
-
-    g_free(uri);
-}
-*/
 static void
 on_treeview_row_expanded (GtkWidget *widget, GtkTreeIter *iter,
                 GtkTreePath *path, gpointer user_data)
@@ -2641,6 +2675,8 @@ static const char settings_dlg[] =
     "property \"Show hidden files\"             checkbox "              CONFSTR_FB_SHOW_HIDDEN_FILES    " 0 ;\n"
     "property \"Show bookmarks\"                checkbox "              CONFSTR_FB_SHOW_BOOKMARKS       " 1 ;\n"
     "property \"Bookmarks file (GTK)\"          entry "                 CONFSTR_FB_BOOKMARKS_FILE       " \"" DEFAULT_FB_BOOKMARKS_FILE "\" ;\n"
+    "property \"Search delay (do not update tree while typing)\" "
+                                               "spinbtn[100,5000,100] " CONFSTR_FB_SEARCH_DELAY         " 1000 ;\n"
     "property \"Sort contents by name (otherwise by modification date) \" "
                                                "checkbox "              CONFSTR_FB_SORT_TREEVIEW        " 1 ;\n"
     "property \"Show tree lines\"               checkbox "              CONFSTR_FB_SHOW_TREE_LINES      " 0 ;\n"
@@ -2672,7 +2708,11 @@ static DB_misc_t plugin = {
     .plugin.name            = "File Browser",
     .plugin.descr           = "Simple file browser,\n" "based on Geany's treebrowser plugin",
     .plugin.copyright       =
-        "Copyright (C) 2011-2014 Jan D. Behrens <zykure@web.de>\n"
+        "Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>\n"
+        "\n"
+        "Contributions by:\n"
+        "  Tobias Bengfort <tobias.bengfort@posteo.de>\n"
+        "  420MuNkEy\n"
         "\n"
         "Based on the Geany treebrowser plugin by Adrian Dimitrov.\n"
         "\n"

@@ -21,6 +21,7 @@ SRCTARGET=${BUILDROOT}/../${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
 rm -rf ${INSTALLDIR}
 mkdir -p ${INSTALLDIR}/${PACKAGENAME}
 make DESTDIR=${INSTALLDIR} install
+libtool --finish ${INSTALLDIR}/${PACKAGENAME}
 if [ -d ${INSTALLDIR} ]; then
     cd ${INSTALLDIR}
     for file in ./usr/local/lib/deadbeef/*.so.0.0.0; do

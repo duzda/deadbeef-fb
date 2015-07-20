@@ -52,6 +52,7 @@
 #define     CONFSTR_FB_FONT_SIZE            "filebrowser.font_size"
 #define     CONFSTR_FB_ICON_SIZE            "filebrowser.icon_size"
 #define     CONFSTR_FB_SORT_TREEVIEW        "filebrowser.sort_treeview"
+#define     CONFSTR_FB_SEARCH_DELAY         "filebrowser.search_delay"
 
 #define     DEFAULT_FB_DEFAULT_PATH         ""
 #define     DEFAULT_FB_FILTER               ""  // auto-filter enabled by default
@@ -162,20 +163,16 @@ static void         on_button_go_root (void);
 static void         on_button_go_default (void);
 static void         on_addressbar_changed (void);
 static void         on_searchbar_changed (void);
+#if !GTK_CHECK_VERSION(3,6,0)
 static void         on_searchbar_cleared (void);
+#endif
 
-static gboolean     on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
-                            GtkTreeSelection *selection);
-static gboolean     on_treeview_mouseclick_release (GtkWidget *widget, GdkEventButton *event,
-                            GtkTreeSelection *selection);
+static gboolean     on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event, GtkTreeSelection *selection);
+static gboolean     on_treeview_mouseclick_release (GtkWidget *widget, GdkEventButton *event, GtkTreeSelection *selection);
 static gboolean     on_treeview_mousemove (GtkWidget *widget, GdkEventButton *event);
 static void         on_treeview_changed (GtkWidget *widget, gpointer user_data);
-//static void         on_treeview_row_activated (GtkWidget *widget, GtkTreePath *path,
-//                            GtkTreeViewColumn *column, gpointer user_data);
-static void         on_treeview_row_expanded (GtkWidget *widget, GtkTreeIter *iter,
-                        GtkTreePath *path, gpointer user_data);
-static void         on_treeview_row_collapsed (GtkWidget *widget, GtkTreeIter *iter,
-                            GtkTreePath *path, gpointer user_data);
+static void         on_treeview_row_expanded (GtkWidget *widget, GtkTreeIter *iter, GtkTreePath *path, gpointer user_data);
+static void         on_treeview_row_collapsed (GtkWidget *widget, GtkTreeIter *iter, GtkTreePath *path, gpointer user_data);
 
 static int          plugin_init (void);
 static int          plugin_cleanup (void);
