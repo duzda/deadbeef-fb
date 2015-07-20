@@ -8,23 +8,24 @@ pkgver=@PACKAGEVER@
 pkgrel=@PACKAGEREL@
 pkgdesc="A filebrowser plugin for the DeaDBeeF audio player"
 arch=('any')
-url="http://sourceforge.net/projects/deadbeef-fb/"
+url="https://gitlab.com/zykure/deadbeef-fb"
 license=(GPL)
 depends=('deadbeef>=0.6', @PACKAGEDEPS@)
 backup=()
-source=(http://downloads.sourceforge.net/project/deadbeef-fb/master/@SOURCENAME@_src.tar.gz)
+source=(https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=@PACKAGEVER@)
 md5sums=('@MD5SUM@')
 sha1sums=('@SHA1SUM@')
 sha256sums=('@SHA256SUM@')
 
 build() {
-  cd $srcdir/deadbeef-fb-devel
+  cd $srcdir/deadbeef-fb.git
+  ./autogen.sh
   ./configure --prefix=/usr @PACKAGECONFIG@
   make
 }
 
 package() {
-  cd $srcdir/deadbeef-fb-devel
+  cd $srcdir/deadbeef-fb.git
   make DESTDIR="$pkgdir" install
 }
 

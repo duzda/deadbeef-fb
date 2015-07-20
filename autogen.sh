@@ -1,7 +1,9 @@
 #!/bin/sh
 
-git log --format='%aN' | sort -u > AUTHORS
-git log > ChangeLog
+if [ -d .git ]; then
+	git log --format='%aN' | sort -u > AUTHORS
+	git log > ChangeLog
+fi
 
 aclocal
 autoheader
