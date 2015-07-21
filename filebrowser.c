@@ -29,7 +29,7 @@
 
 
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    80
+#define PLUGIN_VERSION_MINOR    81
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -83,11 +83,13 @@ static gint                 CONFIG_ICON_SIZE            = 24;
 static gint                 CONFIG_FONT_SIZE            = 0;
 static gboolean             CONFIG_SORT_TREEVIEW        = TRUE;
 static gint                 CONFIG_SEARCH_DELAY         = 1000;
+static gint                 CONFIG_FULLSEARCH_WAIT      = 5;
 
 /* Global variables */
 static DB_misc_t            plugin;
 static DB_functions_t *     deadbeef                    = NULL;
 static ddb_gtkui_t *        gtkui_plugin                = NULL;
+//static uintptr_t            treebrowser_mutex           = NULL;
 
 static GtkWidget *          mainmenuitem                = NULL;
 static GtkWidget *          vbox_playlist;
@@ -114,7 +116,7 @@ static gint                 mouseclick_lastpos[2]       = { 0, 0 };
 static gboolean             mouseclick_dragwait         = FALSE;
 static GtkTreePath *        mouseclick_lastpath         = NULL;
 
-//static gboolean             all_expanded                = FALSE;
+static gboolean             all_expanded                = FALSE;
 static gint64               last_searchbar_change       = 0;
 
 
@@ -191,6 +193,7 @@ save_config (void)
     deadbeef->conf_set_int (CONFSTR_FB_FONT_SIZE,           CONFIG_FONT_SIZE);
     deadbeef->conf_set_int (CONFSTR_FB_SORT_TREEVIEW,       CONFIG_SORT_TREEVIEW);
     deadbeef->conf_set_int (CONFSTR_FB_SEARCH_DELAY,        CONFIG_SEARCH_DELAY);
+    deadbeef->conf_set_int (CONFSTR_FB_FULLSEARCH_WAIT,     CONFIG_FULLSEARCH_WAIT);
 
     if (CONFIG_DEFAULT_PATH)
         deadbeef->conf_set_str (CONFSTR_FB_DEFAULT_PATH,    CONFIG_DEFAULT_PATH);
@@ -209,21 +212,29 @@ save_config (void)
     if (CONFIG_COLOR_FG_SEL)
         deadbeef->conf_set_str (CONFSTR_FB_COLOR_FG_SEL,    CONFIG_COLOR_FG_SEL);
 
-    if (CONFIG_SAVE_TREEVIEW && expanded_rows)  // prevent overwriting with an empty list
+    if (CONFIG_SAVE_TREEVIEW)
+        save_config_expanded_rows ();
+}
+
+static void
+save_config_expanded_rows ()
+{
+    // prevent overwriting with an empty list
+    if (! expanded_rows)
+        return;
+
+    GString *config_expanded_rows_str = g_string_new ("");
+    GSList *node;
+    for (node = expanded_rows->next; node; node = node->next)  // first item is always NULL
     {
-        GString *config_expanded_rows_str = g_string_new ("");
-        GSList *node;
-        for (node = expanded_rows->next; node; node = node->next)  // first item is always NULL
-        {
-            if (config_expanded_rows_str->len > 0)
-                config_expanded_rows_str = g_string_append_c (config_expanded_rows_str, ' ');
-            config_expanded_rows_str = g_string_append (config_expanded_rows_str, node->data);
-        }
-        gchar *config_expanded_rows = g_string_free (config_expanded_rows_str, FALSE);
-        trace("expanded rows: %s\n", config_expanded_rows);
-        deadbeef->conf_set_str (CONFSTR_FB_EXPANDED_ROWS, config_expanded_rows);
-        g_free (config_expanded_rows);
+        if (config_expanded_rows_str->len > 0)
+            config_expanded_rows_str = g_string_append_c (config_expanded_rows_str, ' ');
+        config_expanded_rows_str = g_string_append (config_expanded_rows_str, node->data);
     }
+    gchar *config_expanded_rows = g_string_free (config_expanded_rows_str, FALSE);
+    trace("expanded rows: %s\n", config_expanded_rows);
+    deadbeef->conf_set_str (CONFSTR_FB_EXPANDED_ROWS, config_expanded_rows);
+    g_free (config_expanded_rows);
 }
 
 static void
@@ -264,6 +275,7 @@ load_config (void)
     CONFIG_FONT_SIZE            = deadbeef->conf_get_int (CONFSTR_FB_FONT_SIZE,           0);
     CONFIG_SORT_TREEVIEW        = deadbeef->conf_get_int (CONFSTR_FB_SORT_TREEVIEW,       TRUE);
     CONFIG_SEARCH_DELAY         = deadbeef->conf_get_int (CONFSTR_FB_SEARCH_DELAY,        1000);
+    CONFIG_FULLSEARCH_WAIT      = deadbeef->conf_get_int (CONFSTR_FB_FULLSEARCH_WAIT,     5);
 
     CONFIG_DEFAULT_PATH         = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_DEFAULT_PATH,   DEFAULT_FB_DEFAULT_PATH));
     CONFIG_FILTER               = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_FILTER,         DEFAULT_FB_FILTER));
@@ -274,21 +286,8 @@ load_config (void)
     CONFIG_COLOR_BG_SEL         = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_COLOR_BG_SEL,   ""));
     CONFIG_COLOR_FG_SEL         = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_COLOR_FG_SEL,   ""));
 
-    if (expanded_rows)
-        g_slist_free (expanded_rows);
-    expanded_rows = g_slist_alloc();
-
     if (CONFIG_SAVE_TREEVIEW)
-    {
-        gchar **config_expanded_rows;
-        config_expanded_rows = g_strsplit (deadbeef->conf_get_str_fast (CONFSTR_FB_EXPANDED_ROWS,   ""), " ", 0);
-
-        for (int i = 0; i < g_strv_length(config_expanded_rows); i++)
-        {
-            expanded_rows = g_slist_append (expanded_rows, g_strdup (config_expanded_rows[i]));
-        }
-        g_strfreev (config_expanded_rows);
-    }
+        load_config_expanded_rows ();
 
     deadbeef->conf_unlock ();
 
@@ -317,7 +316,8 @@ load_config (void)
         "icon_size:         %d \n"
         "font_size:         %d \n"
         "sort_treeview:     %d \n"
-        "search_delay:      %d \n",
+        "search_delay:      %d \n"
+        "fullsearch_wait:   %d \n",
         CONFIG_ENABLED,
         CONFIG_HIDDEN,
         CONFIG_DEFAULT_PATH,
@@ -340,8 +340,26 @@ load_config (void)
         CONFIG_ICON_SIZE,
         CONFIG_FONT_SIZE,
         CONFIG_SORT_TREEVIEW,
-        CONFIG_SEARCH_DELAY
+        CONFIG_SEARCH_DELAY,
+        CONFIG_FULLSEARCH_WAIT
         );
+}
+
+static void
+load_config_expanded_rows ()
+{
+    if (expanded_rows)
+        g_slist_free (expanded_rows);
+    expanded_rows = g_slist_alloc();
+
+    gchar **config_expanded_rows;
+    config_expanded_rows = g_strsplit (deadbeef->conf_get_str_fast (CONFSTR_FB_EXPANDED_ROWS,   ""), " ", 0);
+
+    for (int i = 0; i < g_strv_length(config_expanded_rows); i++)
+    {
+        expanded_rows = g_slist_append (expanded_rows, g_strdup (config_expanded_rows[i]));
+    }
+    g_strfreev (config_expanded_rows);
 }
 
 static gboolean
@@ -482,7 +500,7 @@ on_config_changed (uintptr_t ctx)
     g_free (fgcolor_sel);
 
     if (do_update)
-        g_idle_add (treeview_update, NULL);
+        treeview_update (NULL);
 
     return 0;
 }
@@ -980,6 +998,14 @@ create_sidebar (void)
     gtk_box_pack_start (GTK_BOX (sidebar_vbox), sidebar_vbox_bars, FALSE, TRUE, 1);
     gtk_box_pack_start (GTK_BOX (sidebar_vbox), scrollwin, TRUE, TRUE, 1);
 
+    // adjust tab-focus
+    GList *focus_vbox_bars = NULL;
+    focus_vbox_bars = g_list_append (focus_vbox_bars, sidebar_hbox_search);
+    focus_vbox_bars = g_list_append (focus_vbox_bars, toolbar);
+    focus_vbox_bars = g_list_append (focus_vbox_bars, sidebar_hbox_address);
+    gtk_container_set_focus_chain (GTK_CONTAINER (sidebar_vbox_bars), focus_vbox_bars);
+    g_list_free (focus_vbox_bars);
+
     g_signal_connect (selection,    "changed",              G_CALLBACK (on_treeview_changed),               button_add);
     g_signal_connect (treeview,     "button-press-event",   G_CALLBACK (on_treeview_mouseclick_press),      selection);
     g_signal_connect (treeview,     "button-release-event", G_CALLBACK (on_treeview_mouseclick_release),    selection);
@@ -1427,13 +1453,12 @@ treebrowser_chroot (gchar *directory)
     if (! treebrowser_checkdir (directory))
         return;
 
-    treebrowser_bookmarks_set_state ();
-
-    gtk_tree_store_clear (treestore);
     setptr (addressbar_last_address, g_strdup (directory));
 
-    treebrowser_browse (NULL, NULL);
-    treebrowser_load_bookmarks ();
+    treebrowser_browse_dir (NULL);
+    //trace("starting thread for adding files to playlist\n");
+    //intptr_t tid = deadbeef->thread_start (treebrowser_browse_dir, NULL);
+    //deadbeef->thread_detach (tid);
 }
 
 static gboolean
@@ -1452,8 +1477,6 @@ check_empty(gchar *directory)
             uri         = g_strconcat (directory, G_DIR_SEPARATOR_S, fname, NULL);
             is_dir      = g_file_test (uri, G_FILE_TEST_IS_DIR);
             utf8_name   = utils_get_utf8_from_locale (fname);
-
-            trace("uri=%s hidden=%d filtered=%d searched=%d\n",uri,check_hidden (uri),check_filtered (utf8_name),check_search (uri));
 
             if (! check_hidden (uri)) {
                 if (is_dir) {
@@ -1483,6 +1506,23 @@ check_empty(gchar *directory)
 }
 
 /* Browse given directory - update contents and fill in the treeview */
+static void
+treebrowser_browse_dir (gpointer directory)
+{
+    //deadbeef->mutex_lock (treebrowser_mutex);
+
+    treebrowser_bookmarks_set_state ();
+    gtk_tree_store_clear (treestore);
+
+    // freeze the treeview during update to improve performance
+    gtk_widget_freeze_child_notify (treeview);
+    treebrowser_browse ((gchar*) directory, NULL);
+    treebrowser_load_bookmarks ();
+    gtk_widget_thaw_child_notify (treeview);
+
+    //deadbeef->mutex_unlock (treebrowser_mutex);
+}
+
 static gboolean
 treebrowser_browse (gchar *directory, gpointer parent)
 {
@@ -1878,7 +1918,7 @@ on_menu_go_up (GtkMenuItem *menuitem, gpointer *user_data)
 static void
 on_menu_refresh (GtkMenuItem *menuitem, gpointer *user_data)
 {
-    treebrowser_browse (addressbar_last_address, NULL);
+    treebrowser_chroot (addressbar_last_address);
 }
 
 static void
@@ -2046,7 +2086,6 @@ on_button_refresh (void)
 static void
 on_button_go_up (void)
 {
-    //treeview_clear_expanded ();
     gchar *uri = g_path_get_dirname (addressbar_last_address);
     treebrowser_chroot (uri);
     g_free (uri);
@@ -2055,7 +2094,6 @@ on_button_go_up (void)
 static void
 on_button_go_home (void)
 {
-    //treeview_clear_expanded ();
     gchar *uri = utils_get_home_dir ();
     treebrowser_chroot (uri);
     g_free (uri);
@@ -2065,7 +2103,6 @@ on_button_go_home (void)
 static void
 on_button_go_root (void)
 {
-    //treeview_clear_expanded ();
     gchar *uri = g_strdup (G_DIR_SEPARATOR_S);
     treebrowser_chroot (uri);
     g_free (uri);
@@ -2074,7 +2111,6 @@ on_button_go_root (void)
 static void
 on_button_go_default (void)
 {
-    //treeview_clear_expanded ();
     gchar *uri = get_default_dir ();
     treebrowser_chroot (uri);
     g_free (uri);
@@ -2083,7 +2119,6 @@ on_button_go_default (void)
 static void
 on_addressbar_changed ()
 {
-    //treeview_clear_expanded ();
     gchar *uri = g_strdup( gtk_entry_get_text (GTK_ENTRY (gtk_bin_get_child( GTK_BIN (addressbar)))));
     treebrowser_chroot (uri);
     g_free (uri);
@@ -2106,21 +2141,26 @@ on_searchbar_timeout ()
         g_free (searchbar_text);
     searchbar_text = g_strdup (gtk_entry_get_text (GTK_ENTRY (searchbar)));
 
-    trace("search: %s\n",searchbar_text);
-/*
-    // expand all tree items to search everywhere - FIXME this kills usability on large trees!
-    if (strlen (searchbar_text) > 0) {
+    trace("search: %s (len=%lu, thresh=%d)\n", searchbar_text, strlen (searchbar_text), CONFIG_FULLSEARCH_WAIT);
+
+    if (strlen (searchbar_text) >= CONFIG_FULLSEARCH_WAIT) {
+        // expand all tree items to search everywhere (this can take a loooooong time)
         if (! all_expanded) {
             expand_all ();
-            all_expanded = TRUE;
         }
+        all_expanded = TRUE;
     }
     else {
-        treeview_clear_expanded ();
+        if (all_expanded) {
+            treeview_clear_expanded ();
+            collapse_all ();
+            load_config_expanded_rows ();  // to make things easy we just load the config setting again
+            treeview_restore_expanded (NULL);
+        }
         all_expanded = FALSE;
     }
-*/
-    g_idle_add (treeview_update, NULL);
+
+    treeview_update (NULL);
     return FALSE;  // stop timeout
 }
 
@@ -2482,6 +2522,9 @@ plugin_init (void)
     trace ("init\n");
     if (! expanded_rows)
         expanded_rows = g_slist_alloc ();
+
+    //treebrowser_mutex = deadbeef->mutex_create ();
+
     create_autofilter ();
     update_rootdirs ();
     treebrowser_chroot (NULL);
@@ -2498,8 +2541,12 @@ plugin_cleanup (void)
     trace ("cleanup\n");
     treeview_clear_expanded ();
 
+    //if (treebrowser_mutex)
+    //    deadbeef->mutex_free (treebrowser_mutex);
+
     if (expanded_rows)
         g_slist_free (expanded_rows);
+
     g_free (addressbar_last_address);
     g_free (known_extensions);
 
@@ -2677,6 +2724,8 @@ static const char settings_dlg[] =
     "property \"Bookmarks file (GTK)\"          entry "                 CONFSTR_FB_BOOKMARKS_FILE       " \"" DEFAULT_FB_BOOKMARKS_FILE "\" ;\n"
     "property \"Search delay (do not update tree while typing)\" "
                                                "spinbtn[100,5000,100] " CONFSTR_FB_SEARCH_DELAY         " 1000 ;\n"
+    "property \"Wait for N chars until full search (fully expand tree)\" "
+                                               "spinbtn[1,10,1]       " CONFSTR_FB_FULLSEARCH_WAIT      " 5 ;\n"
     "property \"Sort contents by name (otherwise by modification date) \" "
                                                "checkbox "              CONFSTR_FB_SORT_TREEVIEW        " 1 ;\n"
     "property \"Show tree lines\"               checkbox "              CONFSTR_FB_SHOW_TREE_LINES      " 0 ;\n"

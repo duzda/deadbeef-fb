@@ -53,6 +53,7 @@
 #define     CONFSTR_FB_ICON_SIZE            "filebrowser.icon_size"
 #define     CONFSTR_FB_SORT_TREEVIEW        "filebrowser.sort_treeview"
 #define     CONFSTR_FB_SEARCH_DELAY         "filebrowser.search_delay"
+#define     CONFSTR_FB_FULLSEARCH_WAIT      "filebrowser.fullsearch_wait"
 
 #define     DEFAULT_FB_DEFAULT_PATH         ""
 #define     DEFAULT_FB_FILTER               ""  // auto-filter enabled by default
@@ -95,7 +96,9 @@ static void         setup_dragdrop (void);
 static void         create_autofilter (void);
 static void         update_rootdirs (void);
 static void         save_config (void);
+static void         save_config_expanded_rows (void);
 static void         load_config (void);
+static void         load_config_expanded_rows (void);
 static gboolean     treeview_update (void *ctx);
 static gboolean     filebrowser_init (void *ctx);
 static int          handle_message (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2);
@@ -134,6 +137,7 @@ static gboolean     treeview_separator_func (GtkTreeModel *model, GtkTreeIter *i
 static gboolean     treebrowser_checkdir (const gchar *directory);
 static void         treebrowser_chroot(gchar *directory);
 static gboolean     check_empty (gchar *directory);
+static void         treebrowser_browse_dir (gpointer directory);
 static gboolean     treebrowser_browse (gchar *directory, gpointer parent);
 static void         treebrowser_bookmarks_set_state (void);
 static void         treebrowser_load_bookmarks (void);
