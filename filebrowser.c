@@ -1574,7 +1574,7 @@ treebrowser_browse (gchar *directory, gpointer parent)
             {
                 GdkPixbuf *icon = NULL;
 
-                if (is_dir && !check_empty (uri))
+                if (is_dir && ! check_empty (uri))
                 {
                     if (last_dir_iter == NULL)
                     {
@@ -1684,12 +1684,12 @@ treebrowser_bookmarks_set_state (void)
 gboolean
 bookmarks_foreach_func (GtkTreeModel *model, GtkTreePath  *path, GtkTreeIter  *iter, GList **rowref_list)
 {
-    g_assert ( rowref_list != NULL );
+    g_assert (rowref_list != NULL);
 
     gboolean flag;
     gtk_tree_model_get (model, iter, TREEBROWSER_COLUMN_FLAG, &flag, -1);
 
-    if ( flag == TREEBROWSER_FLAGS_BOOKMARK )
+    if (flag == TREEBROWSER_FLAGS_BOOKMARK)
     {
         GtkTreeRowReference  *rowref;
         rowref = gtk_tree_row_reference_new (model, path);
@@ -1820,7 +1820,7 @@ treebrowser_load_bookmarks (void)
         GList *bookmarks_list = NULL;
         gtk_tree_model_foreach (GTK_TREE_MODEL (treestore), (GtkTreeModelForeachFunc) bookmarks_foreach_func, &bookmarks_list);
 
-        for ( GList *node = bookmarks_list;  node != NULL;  node = node->next )
+        for (GList *node = bookmarks_list; node != NULL; node = node->next)
         {
             GtkTreePath *path;
             path = gtk_tree_row_reference_get_path ((GtkTreeRowReference*) node->data);
@@ -2690,7 +2690,7 @@ filebrowser_connect (void)
     gtkui_plugin = (ddb_gtkui_t *) deadbeef->plug_get_for_id (DDB_GTKUI_PLUGIN_ID);
     if (gtkui_plugin)
     {
-        trace("using '%s' plugin %d.%d\n", DDB_GTKUI_PLUGIN_ID, gtkui_plugin->gui.plugin.version_major, gtkui_plugin->gui.plugin.version_minor );
+        trace("using '%s' plugin %d.%d\n", DDB_GTKUI_PLUGIN_ID, gtkui_plugin->gui.plugin.version_major, gtkui_plugin->gui.plugin.version_minor);
         if (gtkui_plugin->gui.plugin.version_major == 2)
         {
             printf ("fb api2\n");
@@ -2700,7 +2700,7 @@ filebrowser_connect (void)
         }
     }
     else
-        trace("error: could not find '%s' plugin (gtkui api version %d.%d)!\n", DDB_GTKUI_PLUGIN_ID, DDB_GTKUI_API_VERSION_MAJOR, DDB_GTKUI_API_VERSION_MINOR );
+        trace("error: could not find '%s' plugin (gtkui api version %d.%d)!\n", DDB_GTKUI_PLUGIN_ID, DDB_GTKUI_API_VERSION_MAJOR, DDB_GTKUI_API_VERSION_MINOR);
 #endif  // DDB_GTKUI_API_VERSION_MAJOR
 
     // 0.5 compatibility
@@ -2712,7 +2712,7 @@ filebrowser_connect (void)
 #endif
     if (gtkui_plugin)
     {
-        trace("using '%s' plugin %d.%d\n", DDB_GTKUI_PLUGIN_ID, gtkui_plugin->gui.plugin.version_major, gtkui_plugin->gui.plugin.version_minor );
+        trace("using '%s' plugin %d.%d\n", DDB_GTKUI_PLUGIN_ID, gtkui_plugin->gui.plugin.version_major, gtkui_plugin->gui.plugin.version_minor);
         if (gtkui_plugin->gui.plugin.version_major == 1)
         {
             printf ("fb api1\n");
