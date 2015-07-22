@@ -131,7 +131,7 @@ gtkui_update_listview_headers (void)
 
     /* Nasty workaround: emit the "headers visible" menuitem signal once or
      * twice to update the playlist view
-     * FIXME: Would be better to have direct acces to the ddblistview instance.
+     * TODO (upstream): Would be better to have direct acces to the ddblistview instance.
      */
     if (! conf_enabled)
     {
@@ -1357,7 +1357,7 @@ get_icon_for_uri (gchar *uri)
 
     if (! g_file_test (uri, G_FILE_TEST_IS_DIR))
     {
-        // FIXME: handle mimetypes
+        // TODO: handle mimetypes
         return utils_pixbuf_from_stock ("gtk-file", CONFIG_ICON_SIZE);
     }
 
