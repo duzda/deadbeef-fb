@@ -520,8 +520,8 @@ void on_drag_data_get_helper (gpointer data, gpointer userdata)
 
 static void
 on_drag_data_get (GtkWidget *widget, GdkDragContext *drag_context,
-                  GtkSelectionData *sdata, guint info, guint time,
-                  gpointer user_data)
+                GtkSelectionData *sdata, guint info, guint time,
+                gpointer user_data)
 {
     GtkTreeSelection    *selection;
     GList               *rows;
@@ -924,7 +924,7 @@ create_sidebar (void)
 #endif
 
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrollwin),
-                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
     toolbar = gtk_toolbar_new ();
     gtk_toolbar_set_icon_size (GTK_TOOLBAR (toolbar), GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -1658,7 +1658,7 @@ treebrowser_browse (gchar *directory, gpointer parent)
         if (expanded)
             gtk_tree_view_expand_row (GTK_TREE_VIEW (treeview),
                             gtk_tree_model_get_path (GTK_TREE_MODEL (treestore), parent),
-                                FALSE);
+                            FALSE);
     }
     else
         treebrowser_load_bookmarks ();
