@@ -29,7 +29,7 @@
 
 
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    82
+#define PLUGIN_VERSION_MINOR    83
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -92,6 +92,7 @@ static gint                 CONFIG_SEARCH_DELAY         = 1000;
 static gint                 CONFIG_FULLSEARCH_WAIT      = 5;
 static gboolean             CONFIG_HIDE_NAVIGATION      = FALSE;
 static gboolean             CONFIG_HIDE_SEARCH          = FALSE;
+static gboolean             CONFIG_HIDE_TOOLBAR         = FALSE;
 
 /* Internal variables */
 static DB_misc_t            plugin;
@@ -105,9 +106,9 @@ static GtkWidget *          hbox_all                    = NULL;
 static GtkWidget *          treeview                    = NULL;
 static GtkTreeStore *       treestore                   = NULL;
 static GtkWidget *          sidebar                     = NULL;
-static GtkWidget *          sidebar_navbox              = NULL;
 static GtkWidget *          sidebar_searchbox           = NULL;
 static GtkWidget *          sidebar_addressbox          = NULL;
+static GtkWidget *          sidebar_toolbar             = NULL;
 static GtkWidget *          toolbar_button_add          = NULL;
 static GtkWidget *          toolbar_button_replace      = NULL;
 static GtkWidget *          addressbar                  = NULL;
@@ -215,6 +216,7 @@ save_config (void)
     deadbeef->conf_set_int (CONFSTR_FB_FULLSEARCH_WAIT,     CONFIG_FULLSEARCH_WAIT);
     deadbeef->conf_set_int (CONFSTR_FB_HIDE_NAVIGATION,     CONFIG_HIDE_NAVIGATION);
     deadbeef->conf_set_int (CONFSTR_FB_HIDE_SEARCH,         CONFIG_HIDE_SEARCH);
+    deadbeef->conf_set_int (CONFSTR_FB_HIDE_TOOLBAR,        CONFIG_HIDE_TOOLBAR);
 
     if (CONFIG_DEFAULT_PATH)
         deadbeef->conf_set_str (CONFSTR_FB_DEFAULT_PATH,    CONFIG_DEFAULT_PATH);
@@ -302,6 +304,7 @@ load_config (void)
     CONFIG_FULLSEARCH_WAIT      = deadbeef->conf_get_int (CONFSTR_FB_FULLSEARCH_WAIT,     5);
     CONFIG_HIDE_NAVIGATION      = deadbeef->conf_get_int (CONFSTR_FB_HIDE_NAVIGATION,     FALSE);
     CONFIG_HIDE_SEARCH          = deadbeef->conf_get_int (CONFSTR_FB_HIDE_SEARCH,         FALSE);
+    CONFIG_HIDE_TOOLBAR         = deadbeef->conf_get_int (CONFSTR_FB_HIDE_TOOLBAR,        FALSE);
 
     CONFIG_DEFAULT_PATH         = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_DEFAULT_PATH,   DEFAULT_FB_DEFAULT_PATH));
     CONFIG_FILTER               = g_strdup (deadbeef->conf_get_str_fast (CONFSTR_FB_FILTER,         DEFAULT_FB_FILTER));
@@ -345,7 +348,8 @@ load_config (void)
         "search_delay:      %d \n"
         "fullsearch_wait:   %d \n"
         "hide_navigation:   %d \n"
-        "hide_search:       %d \n",
+        "hide_search:       %d \n"
+        "hide_toolbar:      %d \n",
         CONFIG_ENABLED,
         CONFIG_HIDDEN,
         CONFIG_DEFAULT_PATH,
@@ -371,7 +375,8 @@ load_config (void)
         CONFIG_SEARCH_DELAY,
         CONFIG_FULLSEARCH_WAIT,
         CONFIG_HIDE_NAVIGATION,
-        CONFIG_HIDE_SEARCH
+        CONFIG_HIDE_SEARCH,
+        CONFIG_HIDE_TOOLBAR
         );
 }
 
@@ -528,14 +533,19 @@ on_config_changed (uintptr_t ctx)
             gtk_widget_show (sidebar);
 
         if (CONFIG_HIDE_NAVIGATION)
-            gtk_widget_hide (sidebar_navbox);
+            gtk_widget_hide (sidebar_addressbox);
         else
-            gtk_widget_show (sidebar_navbox);
+            gtk_widget_show (sidebar_addressbox);
 
         if (CONFIG_HIDE_SEARCH)
             gtk_widget_hide (sidebar_searchbox);
         else
             gtk_widget_show (sidebar_searchbox);
+
+        if (CONFIG_HIDE_TOOLBAR)
+            gtk_widget_hide (sidebar_toolbar);
+        else
+            gtk_widget_show (sidebar_toolbar);
 
         if (width != CONFIG_WIDTH)
             gtk_widget_set_size_request (sidebar, CONFIG_WIDTH, -1);
@@ -945,15 +955,20 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
     item = gtk_separator_menu_item_new ();
     gtk_container_add (GTK_CONTAINER (menu), item);
 
-    item = gtk_check_menu_item_new_with_mnemonic (_("Hide na_vigation area"));
-    gtk_container_add (GTK_CONTAINER (menu), item);
-    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_HIDE_NAVIGATION);
-    g_signal_connect (item, "activate", G_CALLBACK (on_menu_hide_navigation), NULL);
-
     item = gtk_check_menu_item_new_with_mnemonic (_("Hide _search bar"));
     gtk_container_add (GTK_CONTAINER (menu), item);
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_HIDE_SEARCH);
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_hide_search), NULL);
+
+    item = gtk_check_menu_item_new_with_mnemonic (_("Hide na_vigation bar"));
+    gtk_container_add (GTK_CONTAINER (menu), item);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_HIDE_NAVIGATION);
+    g_signal_connect (item, "activate", G_CALLBACK (on_menu_hide_navigation), NULL);
+
+    item = gtk_check_menu_item_new_with_mnemonic (_("Hide tool_bar"));
+    gtk_container_add (GTK_CONTAINER (menu), item);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_HIDE_TOOLBAR);
+    g_signal_connect (item, "activate", G_CALLBACK (on_menu_hide_toolbar), NULL);
 
     gtk_widget_show_all (menu);
 
@@ -1018,7 +1033,7 @@ create_sidebar (void)
 {
     trace("create sidebar\n");
 
-    GtkWidget           *toolbar, *scrollwin;
+    GtkWidget           *scrollwin;
     GtkWidget           *wid, *button_go;
 #if !GTK_CHECK_VERSION(3,6,0)
     GtkWidget           *button_clear;
@@ -1026,15 +1041,15 @@ create_sidebar (void)
     GtkTreeSelection    *selection;
 
     treeview            = create_view_and_model ();
+    scrollwin           = gtk_scrolled_window_new (NULL, NULL);
 #if !GTK_CHECK_VERSION(3,0,0)
     sidebar             = gtk_vbox_new (FALSE, 0);
-    sidebar_navbox      = gtk_vbox_new (FALSE, 0);
     sidebar_searchbox   = gtk_hbox_new (FALSE, 0);
     sidebar_addressbox  = gtk_hbox_new (FALSE, 0);
     addressbar          = gtk_combo_box_text_new_with_entry ();
 #else
     sidebar             = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-    sidebar_navbox      = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    sidebar_toolbar     = gtk_toolbar_new ();
     sidebar_searchbox   = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     sidebar_addressbox  = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     addressbar          = gtk_combo_box_text_new_with_entry ();
@@ -1049,47 +1064,45 @@ create_sidebar (void)
 
     selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
 
-    scrollwin = gtk_scrolled_window_new (NULL, NULL);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrollwin),
                     GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
-    toolbar = gtk_toolbar_new ();
-    gtk_toolbar_set_icon_size (GTK_TOOLBAR (toolbar), GTK_ICON_SIZE_SMALL_TOOLBAR);
-    gtk_toolbar_set_style (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_ICONS);
+    gtk_toolbar_set_icon_size (GTK_TOOLBAR (sidebar_toolbar), GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_toolbar_set_style (GTK_TOOLBAR (sidebar_toolbar), GTK_TOOLBAR_ICONS);
 
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-go-up");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to parent directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_up), NULL);
-    gtk_container_add (GTK_CONTAINER (toolbar), wid);
+    gtk_container_add (GTK_CONTAINER (sidebar_toolbar), wid);
 
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-refresh");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Refresh current directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_refresh), NULL);
-    gtk_container_add (GTK_CONTAINER (toolbar), wid);
+    gtk_container_add (GTK_CONTAINER (sidebar_toolbar), wid);
 
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-home");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to home directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_home), NULL);
-    gtk_container_add (GTK_CONTAINER (toolbar), wid);
+    gtk_container_add (GTK_CONTAINER (sidebar_toolbar), wid);
 
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-clear");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to default directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_default), NULL);
-    gtk_container_add (GTK_CONTAINER (toolbar), wid);
+    gtk_container_add (GTK_CONTAINER (sidebar_toolbar), wid);
 
     wid = GTK_WIDGET (gtk_tool_item_new ());
     gtk_tool_item_set_expand (GTK_TOOL_ITEM (wid), TRUE);
-    gtk_container_add (GTK_CONTAINER (toolbar), wid);
+    gtk_container_add (GTK_CONTAINER (sidebar_toolbar), wid);
 
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-apply");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Replace current playlist with selection"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_replace_current), NULL);
-    gtk_container_add (GTK_CONTAINER (toolbar), wid);
+    gtk_container_add (GTK_CONTAINER (sidebar_toolbar), wid);
     gtk_widget_set_sensitive (wid, FALSE);
     toolbar_button_replace = wid;
 
@@ -1097,7 +1110,7 @@ create_sidebar (void)
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-add");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Add selection to current playlist"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_add_current), NULL);
-    gtk_container_add (GTK_CONTAINER (toolbar), wid);
+    gtk_container_add (GTK_CONTAINER (sidebar_toolbar), wid);
     gtk_widget_set_sensitive (wid, FALSE);
     toolbar_button_add = wid;
 
@@ -1111,17 +1124,16 @@ create_sidebar (void)
     gtk_box_pack_start (GTK_BOX (sidebar_searchbox), button_clear,  FALSE, TRUE, 0);
 #endif
 
-    gtk_box_pack_start (GTK_BOX (sidebar_navbox), sidebar_addressbox, FALSE, TRUE, 1);
-    gtk_box_pack_start (GTK_BOX (sidebar_navbox), toolbar, FALSE, TRUE, 1);
-
     gtk_box_pack_start (GTK_BOX (sidebar), sidebar_searchbox, FALSE, TRUE, 1);
-    gtk_box_pack_start (GTK_BOX (sidebar), sidebar_navbox,  FALSE, TRUE, 1);
+    gtk_box_pack_start (GTK_BOX (sidebar), sidebar_addressbox,  FALSE, TRUE, 1);
+    gtk_box_pack_start (GTK_BOX (sidebar), sidebar_toolbar,  FALSE, TRUE, 1);
     gtk_box_pack_start (GTK_BOX (sidebar), scrollwin, TRUE, TRUE, 1);
 
     // adjust tab-focus
     GList *focus_list = NULL;
     focus_list = g_list_append (focus_list, sidebar_searchbox);
-    focus_list = g_list_append (focus_list, sidebar_navbox);
+    focus_list = g_list_append (focus_list, sidebar_addressbox);
+    focus_list = g_list_append (focus_list, sidebar_toolbar);
     gtk_container_set_focus_chain (GTK_CONTAINER (sidebar), focus_list);
     g_list_free (focus_list);
 
@@ -1146,10 +1158,13 @@ create_sidebar (void)
         gtk_widget_hide (sidebar);
 
     if (CONFIG_HIDE_NAVIGATION)
-        gtk_widget_hide (sidebar_navbox);
+        gtk_widget_hide (sidebar_addressbox);
 
     if (CONFIG_HIDE_SEARCH)
         gtk_widget_hide (sidebar_searchbox);
+
+    if (CONFIG_HIDE_TOOLBAR)
+        gtk_widget_hide (sidebar_toolbar);
 }
 
 
@@ -2124,9 +2139,9 @@ on_menu_hide_navigation (GtkMenuItem *menuitem, gpointer *user_data)
 {
     CONFIG_HIDE_NAVIGATION = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (menuitem));
     if (CONFIG_HIDE_NAVIGATION)
-        gtk_widget_hide (sidebar_navbox);
+        gtk_widget_hide (sidebar_addressbox);
     else
-        gtk_widget_show (sidebar_navbox);
+        gtk_widget_show (sidebar_addressbox);
 }
 
 static void
@@ -2137,6 +2152,16 @@ on_menu_hide_search (GtkMenuItem *menuitem, gpointer *user_data)
         gtk_widget_hide (sidebar_searchbox);
     else
         gtk_widget_show (sidebar_searchbox);
+}
+
+static void
+on_menu_hide_toolbar (GtkMenuItem *menuitem, gpointer *user_data)
+{
+    CONFIG_HIDE_TOOLBAR = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (menuitem));
+    if (CONFIG_HIDE_TOOLBAR)
+        gtk_widget_hide (sidebar_toolbar);
+    else
+        gtk_widget_show (sidebar_toolbar);
 }
 
 
@@ -2809,8 +2834,6 @@ static const char settings_dlg[] =
     "property \"Filter for shown files: \"      entry "                 CONFSTR_FB_FILTER               " \"" DEFAULT_FB_FILTER         "\" ;\n"
     "property \"Use auto-filter instead (based on active decoder plugins)\" "
                                                "checkbox "              CONFSTR_FB_FILTER_AUTO          " 1 ;\n"
-    //"property \"Show hidden files\"             checkbox "              CONFSTR_FB_SHOW_HIDDEN_FILES    " 0 ;\n"
-    //"property \"Show bookmarks\"                checkbox "              CONFSTR_FB_SHOW_BOOKMARKS       " 1 ;\n"
     "property \"Extra bookmarks file (GTK format): \""
                                                "entry "                 CONFSTR_FB_BOOKMARKS_FILE       " \"" DEFAULT_FB_BOOKMARKS_FILE "\" ;\n"
     "property \"Search delay (do not update tree while typing)\" "
@@ -2825,7 +2848,6 @@ static const char settings_dlg[] =
     "property \"Coverart size: \"               spinbtn[16,32,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
     "property \"Filter for coverart files: \"   entry "                 CONFSTR_FB_COVERART             " \"" DEFAULT_FB_COVERART       "\" ;\n"
     "property \"Sidebar width: \"               spinbtn[150,300,1] "    CONFSTR_FB_WIDTH                " 200 ;\n"
-    //"property \"Hide navigation area\"          checkbox "              CONFSTR_FB_HIDE_NAVIGATION      " 0 ;\n"
     "property \"Save treeview over sessions (restore previously expanded items)\" "
                                                "checkbox "              CONFSTR_FB_SAVE_TREEVIEW        " 1 ;\n"
     "property \"Background color: \"            entry "                 CONFSTR_FB_COLOR_BG             " \"\" ;\n"

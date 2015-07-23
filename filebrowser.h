@@ -56,6 +56,7 @@
 #define     CONFSTR_FB_FULLSEARCH_WAIT      "filebrowser.fullsearch_wait"
 #define     CONFSTR_FB_HIDE_NAVIGATION      "filebrowser.hide_navigation"
 #define     CONFSTR_FB_HIDE_SEARCH          "filebrowser.hide_search"
+#define     CONFSTR_FB_HIDE_TOOLBAR         "filebrowser.hide_toolbar"
 
 #define     DEFAULT_FB_DEFAULT_PATH         ""
 #define     DEFAULT_FB_FILTER               ""  // auto-filter enabled by default
@@ -156,6 +157,7 @@ static void         on_menu_show_hidden_files( GtkMenuItem *menuitem, gpointer *
 static void         on_menu_use_filter (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_hide_navigation (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_hide_search (GtkMenuItem *menuitem, gpointer *user_data);
+static void         on_menu_hide_toolbar (GtkMenuItem *menuitem, gpointer *user_data);
 
 static void         on_button_add_current (void);
 static void         on_button_replace_current (void);
