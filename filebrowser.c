@@ -323,7 +323,7 @@ load_config (void)
         "filter:            %s \n"
         "filter_auto:       %d \n"
         "show_bookmarks:    %d \n"
-        "bookmarks_file:    %s \n"
+        "extra_bookmarks:   %s \n"
         "show_icons:        %d \n"
         "tree_lines:        %d \n"
         "width:             %d \n"
@@ -863,7 +863,7 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
         deadbeef->pl_unlock ();
     }
 
-    item = gtk_menu_item_new_with_label (_("_Add to playlist ..."));
+    item = gtk_menu_item_new_with_mnemonic (_("_Add to playlist ..."));
     gtk_container_add (GTK_CONTAINER (menu), item);
     gtk_widget_set_sensitive (item, is_exists);
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), plmenu);
@@ -925,7 +925,7 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_SHOW_HIDDEN_FILES);
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_show_hidden_files), NULL);
 
-    item = gtk_check_menu_item_new_with_mnemonic (_("_Filter files"));
+    item = gtk_check_menu_item_new_with_mnemonic (_("_Filter files by extension"));
     gtk_container_add (GTK_CONTAINER (menu), item);
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_FILTER_ENABLED);
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_use_filter), NULL);
@@ -1638,16 +1638,6 @@ treebrowser_browse (gchar *directory, gpointer parent)
     directory = g_strconcat (directory, G_DIR_SEPARATOR_S, NULL);
 
     has_parent = parent ? gtk_tree_store_iter_is_valid (treestore, parent) : FALSE;
-#ifdef USE_BOOKMARKS_ICON
-    if (has_parent)
-    {
-        if (parent == &bookmarks_iter)
-            treebrowser_load_bookmarks ();
-    }
-    else
-        parent = NULL;
-#endif
-
     if (has_parent && treeview_row_expanded_iter (GTK_TREE_VIEW (treeview), parent))
     {
         expanded = TRUE;
@@ -1758,8 +1748,8 @@ treebrowser_browse (gchar *directory, gpointer parent)
                             gtk_tree_model_get_path (GTK_TREE_MODEL (treestore), parent),
                             FALSE);
     }
-    else
-        treebrowser_load_bookmarks ();
+    //else
+    //    treebrowser_load_bookmarks ();
 
     g_free (directory);
 
@@ -1799,7 +1789,7 @@ bookmarks_foreach_func (GtkTreeModel *model, GtkTreePath  *path, GtkTreeIter  *i
 
 /* Load user's bookmarks into top of tree */
 static void
-treebrowser_load_bookmarks (void)
+treebrowser_load_bookmarks_helper (const gchar *filename)
 {
     gchar           *bookmarks;
     gchar           *contents, *path_full, *basename, *tooltip;
@@ -1808,10 +1798,7 @@ treebrowser_load_bookmarks (void)
     gchar           *pos;
     GdkPixbuf       *icon = NULL;
 
-    if (! CONFIG_SHOW_BOOKMARKS)
-        return;
-
-    bookmarks = g_strdup (CONFIG_BOOKMARKS_FILE);
+    bookmarks = g_strdup (filename);
 
     if (g_strrstr (bookmarks, "$HOME"))
     {
@@ -1820,123 +1807,9 @@ treebrowser_load_bookmarks (void)
         g_free ((gpointer*) homedir);
     }
 
-    trace("loading bookmarks from file: %s\n", bookmarks);
-
-#ifdef USE_BOOKMARKS_ICON
     if (g_file_get_contents (bookmarks, &contents, NULL, NULL))
     {
-        if (gtk_tree_store_iter_is_valid (treestore, &bookmarks_iter))
-        {
-            bookmarks_expanded = treeview_row_expanded_iter (GTK_TREE_VIEW (treeview),
-                            &bookmarks_iter);
-            tree_store_iter_clear_nodes (treestore, &bookmarks_iter, FALSE);
-        }
-        else
-        {
-            gtk_tree_store_prepend (treestore, &bookmarks_iter, NULL);
-            icon = CONFIG_SHOW_ICONS ?
-                            utils_pixbuf_from_stock ("user-bookmarks", CONFIG_ICON_SIZE) : NULL;
-            gtk_tree_store_set (treestore, &bookmarks_iter,
-                            TREEBROWSER_COLUMN_ICON,    icon,
-                            TREEBROWSER_COLUMN_NAME,    _("Bookmarks"),
-                            TREEBROWSER_COLUMN_URI,     NULL,
-                            TREEBROWSER_COLUMN_TOOLTIP, _("Your personal bookmarks"),
-                            -1);
-            if (icon)
-                g_object_unref (icon);
-
-            gtk_tree_store_insert_after (treestore, &iter, NULL, &bookmarks_iter);
-            gtk_tree_store_set (treestore, &iter,
-                            TREEBROWSER_COLUMN_ICON,    NULL,
-                            TREEBROWSER_COLUMN_NAME,    NULL,
-                            TREEBROWSER_COLUMN_URI,     NULL,
-                            TREEBROWSER_COLUMN_TOOLTIP, NULL,
-                            TREEBROWSER_COLUMN_FLAG,    TREEBROWSER_FLAGS_SEPARATOR,
-                            -1);
-        }
-
-        lines = g_strsplit (contents, "\n", 0);
-        for (line = lines; *line; ++line)
-        {
-            if (**line)
-            {
-                pos = g_utf8_strchr (*line, -1, ' ');
-                if (pos != NULL)
-                {
-                    *pos = '\0';
-                }
-            }
-            path_full = g_filename_from_uri (*line, NULL, NULL);
-            //trace("  loaded bookmark: %s\n", path_full);
-
-            if (path_full != NULL)
-            {
-                basename  = g_path_get_basename (path_full);
-                tooltip   = utils_tooltip_from_uri (path_full);
-
-                if (g_file_test (path_full, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR))
-                {
-                    gtk_tree_store_append (treestore, &iter, &bookmarks_iter);
-                    icon = CONFIG_SHOW_ICONS ?
-                                    utils_pixbuf_from_stock ("folder", CONFIG_ICON_SIZE) : NULL;
-                    gtk_tree_store_set (treestore, &iter,
-                                    TREEBROWSER_COLUMN_ICON,    icon,
-                                    TREEBROWSER_COLUMN_NAME,    basename,
-                                    TREEBROWSER_COLUMN_URI,     path_full,
-                                    TREEBROWSER_COLUMN_TOOLTIP, tooltip,
-                                    -1);
-                    if (icon)
-                        g_object_unref (icon);
-                    gtk_tree_store_append (treestore, &iter, &iter);
-                    gtk_tree_store_set (treestore, &iter,
-                                    TREEBROWSER_COLUMN_ICON,    NULL,
-                                    TREEBROWSER_COLUMN_NAME,    _("(Empty)"),
-                                    TREEBROWSER_COLUMN_URI,     NULL,
-                                    TREEBROWSER_COLUMN_TOOLTIP, NULL,
-                                    -1);
-                }
-
-                g_free (path_full);
-                g_free (basename);
-                g_free (tooltip);
-            }
-        }
-
-        g_strfreev (lines);
-        g_free (contents);
-
-        if (bookmarks_expanded)
-        {
-            GtkTreePath *tree_path = gtk_tree_model_get_path (GTK_TREE_MODEL (treestore),
-                            &bookmarks_iter);
-            gtk_tree_view_expand_row (GTK_TREE_VIEW (treeview), tree_path, FALSE);
-            gtk_tree_path_free (tree_path);
-        }
-    }
-#else
-    if (g_file_get_contents (bookmarks, &contents, NULL, NULL))
-    {
-        GList *bookmarks_list = NULL;
-        gtk_tree_model_foreach (GTK_TREE_MODEL (treestore), (GtkTreeModelForeachFunc) bookmarks_foreach_func, &bookmarks_list);
-
-        for (GList *node = bookmarks_list; node != NULL; node = node->next)
-        {
-            GtkTreePath *path;
-            path = gtk_tree_row_reference_get_path ((GtkTreeRowReference*) node->data);
-
-            if (path)
-            {
-                GtkTreeIter  iter;
-
-                if (gtk_tree_model_get_iter (GTK_TREE_MODEL (treestore), &iter, path))
-                    gtk_list_store_remove (GTK_LIST_STORE (treestore), &iter);
-
-                // FIXME/CHECK: Do we need to free the path here?
-            }
-        }
-
-        g_list_foreach (bookmarks_list, (GFunc) gtk_tree_row_reference_free, NULL);
-        g_list_free (bookmarks_list);
+        trace("loading bookmarks from file: %s\n", bookmarks);
 
         lines = g_strsplit (contents, "\n", 0);
         for (line = lines; *line; ++line)
@@ -1982,9 +1855,50 @@ treebrowser_load_bookmarks (void)
         g_strfreev (lines);
         g_free (contents);
     }
-#endif
 
     g_free (bookmarks);
+}
+
+static void
+treebrowser_load_bookmarks ()
+{
+    // clear bookmarks
+    GList *bookmarks_list = NULL;
+    gtk_tree_model_foreach (GTK_TREE_MODEL (treestore), (GtkTreeModelForeachFunc) bookmarks_foreach_func, &bookmarks_list);
+
+    for (GList *node = bookmarks_list; node != NULL; node = node->next)
+    {
+        GtkTreePath *path;
+        path = gtk_tree_row_reference_get_path ((GtkTreeRowReference*) node->data);
+
+        if (path)
+        {
+            GtkTreeIter  iter;
+
+            if (gtk_tree_model_get_iter (GTK_TREE_MODEL (treestore), &iter, path))
+                gtk_tree_store_remove (GTK_TREE_STORE (treestore), &iter);
+        }
+    }
+
+    g_list_foreach (bookmarks_list, (GFunc) gtk_tree_row_reference_free, NULL);
+    g_list_free (bookmarks_list);
+
+
+    // GTK bookmarks
+    if (CONFIG_SHOW_BOOKMARKS)
+    {
+#if !GTK_CHECK_VERSION(3,0,0)
+        treebrowser_load_bookmarks_helper ("$HOME/.gtk-bookmarks");
+#else
+        treebrowser_load_bookmarks_helper ("$HOME/.config/gtk-3.0/bookmarks");
+#endif
+    }
+
+    // extra bookmarks defined by user
+    if (CONFIG_BOOKMARKS_FILE)
+    {
+        treebrowser_load_bookmarks_helper (CONFIG_BOOKMARKS_FILE);
+    }
 }
 
 
@@ -2868,8 +2782,9 @@ static const char settings_dlg[] =
     "property \"Use auto-filter instead (based on active decoder plugins)\" "
                                                "checkbox "              CONFSTR_FB_FILTER_AUTO          " 1 ;\n"
     //"property \"Show hidden files\"             checkbox "              CONFSTR_FB_SHOW_HIDDEN_FILES    " 0 ;\n"
-    "property \"Show bookmarks\"                checkbox "              CONFSTR_FB_SHOW_BOOKMARKS       " 1 ;\n"
-    "property \"Bookmarks file (GTK)\"          entry "                 CONFSTR_FB_BOOKMARKS_FILE       " \"" DEFAULT_FB_BOOKMARKS_FILE "\" ;\n"
+    //"property \"Show bookmarks\"                checkbox "              CONFSTR_FB_SHOW_BOOKMARKS       " 1 ;\n"
+    "property \"Extra bookmarks file (GTK format): \""
+                                               "entry "                 CONFSTR_FB_BOOKMARKS_FILE       " \"" DEFAULT_FB_BOOKMARKS_FILE "\" ;\n"
     "property \"Search delay (do not update tree while typing)\" "
                                                "spinbtn[100,5000,100] " CONFSTR_FB_SEARCH_DELAY         " 1000 ;\n"
     "property \"Wait for N chars until full search (fully expand tree)\" "
@@ -2882,7 +2797,7 @@ static const char settings_dlg[] =
     "property \"Coverart size: \"               spinbtn[16,32,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
     "property \"Filter for coverart files: \"   entry "                 CONFSTR_FB_COVERART             " \"" DEFAULT_FB_COVERART       "\" ;\n"
     "property \"Sidebar width: \"               spinbtn[150,300,1] "    CONFSTR_FB_WIDTH                " 200 ;\n"
-    "property \"Hide navigation area\"          checkbox "              CONFSTR_FB_HIDE_NAVIGATION      " 0 ;\n"
+    //"property \"Hide navigation area\"          checkbox "              CONFSTR_FB_HIDE_NAVIGATION      " 0 ;\n"
     "property \"Save treeview over sessions (restore previously expanded items)\" "
                                                "checkbox "              CONFSTR_FB_SAVE_TREEVIEW        " 1 ;\n"
     "property \"Background color: \"            entry "                 CONFSTR_FB_COLOR_BG             " \"\" ;\n"
@@ -2911,13 +2826,19 @@ static DB_misc_t plugin =
         "Project homepage: http://sourceforge.net/projects/deadbeef-fb\n"
         "Issue tracker: https://gitlab.com/zykure/deadbeef-fb/issues\n"
         "\n"
-        "MOUSECLICK ACTIONS:"
-        "  * left-click to select (drag&drop to add to playlist)\n"
-        "    * ctrl/shift + left-click to multi-select (but only works if tree level is the same)\n"
-        "  * middle-click to append to current playlist\n"
-        "    * ctrl + middle-click to replace current playlist\n"
-        "    * shift + middle-click to create new playlist\n"
-        "  * right-click for popup menu\n"
+        "BOOKMARKS:\n"
+        "If you don't want to use GTK bookmarks, you can create your own\n"
+        "bookmark file to be used only by the filebrowser\n"
+        "(default location: ~/.config/deadbeef/bookmarks).\n"
+        "\n"
+        "MOUSECLICK ACTIONS:\n"
+        "\t* left-click to select (drag&drop to add to playlist)\n"
+        "\t\t* ctrl + left-click to multi-select\n"
+        "\t\t* shift + left-click to range-select (only works on same tree level)\n"
+        "\t* middle-click to append to current playlist\n"
+        "\t\t* ctrl + middle-click to replace current playlist\n"
+        "\t\t* shift + middle-click to create new playlist\n"
+        "\t* right-click for popup menu\n"
     ,
     .plugin.copyright       =
         "Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>\n"

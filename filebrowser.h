@@ -2,7 +2,7 @@
     Filebrowser plugin for the DeaDBeeF audio player
     http://sourceforge.net/projects/deadbeef-fb/
 
-    Copyright (C) 2011-2014 Jan D. Behrens <zykure@web.de>
+    Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>
 
     Based on Geany treebrowser plugin:
         treebrowser.c - v0.20
@@ -36,7 +36,7 @@
 #define     CONFSTR_FB_FILTER               "filebrowser.filter"
 #define     CONFSTR_FB_FILTER_AUTO          "filebrowser.autofilter"
 #define     CONFSTR_FB_SHOW_BOOKMARKS       "filebrowser.showbookmarks"
-#define     CONFSTR_FB_BOOKMARKS_FILE       "filebrowser.bookmarks_file"
+#define     CONFSTR_FB_BOOKMARKS_FILE       "filebrowser.extra_bookmarks"
 #define     CONFSTR_FB_SHOW_ICONS           "filebrowser.showicons"
 #define     CONFSTR_FB_SHOW_TREE_LINES      "filebrowser.treelines"
 #define     CONFSTR_FB_WIDTH                "filebrowser.sidebar_width"
@@ -59,11 +59,7 @@
 #define     DEFAULT_FB_DEFAULT_PATH         ""
 #define     DEFAULT_FB_FILTER               ""  // auto-filter enabled by default
 #define     DEFAULT_FB_COVERART             "cover.jpg;folder.jpg;front.jpg"
-#if !GTK_CHECK_VERSION(3,0,0)
-#define     DEFAULT_FB_BOOKMARKS_FILE       "$HOME/.gtk-bookmarks"
-#else
-#define     DEFAULT_FB_BOOKMARKS_FILE       "$HOME/.config/gtk-3.0/bookmarks"
-#endif
+#define     DEFAULT_FB_BOOKMARKS_FILE       "$HOME/.config/deadbeef/bookmarks"
 
 
 /* Treebrowser setup */
