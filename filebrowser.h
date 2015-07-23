@@ -121,7 +121,7 @@ static void         create_sidebar (void);
 
 //static void         add_single_uri_to_playlist (gchar *uri, int plt);
 static void         add_uri_to_playlist_worker (void *data);
-static void         add_uri_to_playlist (GList *uri_list, int plt);
+static void         add_uri_to_playlist (GList *uri_list, int plt, int append);
 
 static gboolean     check_filtered (const gchar *base_name);
 static gboolean     check_hidden (const gchar *filename);
@@ -144,6 +144,7 @@ static void         on_menu_toggle (GtkMenuItem *menuitem, gpointer *user_data);
 
 static void         on_menu_add (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_add_current (GtkMenuItem *menuitem, GList *uri_list);
+static void         on_menu_replace_current (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_add_new (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_enter_directory (GtkMenuItem *menuitem, gchar *uri);
 static void         on_menu_go_up (GtkMenuItem *menuitem, gpointer *user_data);
@@ -159,10 +160,10 @@ static void         on_menu_use_filter(GtkMenuItem *menuitem, gpointer *user_dat
 static void         on_menu_hide_navigation(GtkMenuItem *menuitem, gpointer *user_data);
 
 static void         on_button_add_current (void);
+static void         on_button_replace_current (void);
 static void         on_button_refresh (void);
 static void         on_button_go_up (void);
 static void         on_button_go_home (void);
-static void         on_button_go_root (void);
 static void         on_button_go_default (void);
 static void         on_addressbar_changed (void);
 static void         on_searchbar_changed (void);

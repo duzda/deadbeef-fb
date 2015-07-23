@@ -99,20 +99,23 @@ static ddb_gtkui_t *        gtkui_plugin                = NULL;
 //static uintptr_t            treebrowser_mutex           = NULL;
 
 static GtkWidget *          mainmenuitem                = NULL;
-static GtkWidget *          vbox_playlist;
-static GtkWidget *          hbox_all;
-static GtkWidget *          treeview;
-static GtkTreeStore *       treestore;
+static GtkWidget *          vbox_playlist               = NULL;
+static GtkWidget *          hbox_all                    = NULL;
+static GtkWidget *          treeview                    = NULL;
+static GtkTreeStore *       treestore                   = NULL;
 static GtkWidget *          sidebar                     = NULL;
 static GtkWidget *          sidebar_navbox              = NULL;
-static GtkWidget *          addressbar;
+static GtkWidget *          toolbar_button_add          = NULL;
+static GtkWidget *          toolbar_button_replace      = NULL;
+static GtkWidget *          addressbar                  = NULL;
 static gchar *              addressbar_last_address     = NULL;
-static GtkWidget *          searchbar;
+static GtkWidget *          searchbar                   = NULL;
 static gchar *              searchbar_text              = NULL;
 static GtkTreeIter          bookmarks_iter;
 static gboolean             bookmarks_expanded          = FALSE;
-static GtkTreeViewColumn *  treeview_column_text;
-static GtkCellRenderer *    render_icon, *render_text;
+static GtkTreeViewColumn *  treeview_column_text        = NULL;
+static GtkCellRenderer *    render_icon                 = NULL;
+static GtkCellRenderer *    render_text                 = NULL;
 static GSList *             expanded_rows               = NULL;
 static gchar *              known_extensions            = NULL;
 static gboolean             flag_on_expand_refresh      = FALSE;
@@ -475,6 +478,8 @@ handle_message (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2)
 static int
 on_config_changed (uintptr_t ctx)
 {
+    trace("signal: config changed\n");
+
     gboolean    enabled         = CONFIG_ENABLED;
     gboolean    show_hidden     = CONFIG_SHOW_HIDDEN_FILES;
     gboolean    filter_enabled  = CONFIG_FILTER_ENABLED;
@@ -824,6 +829,11 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_add_current), uri_list);
     gtk_widget_set_sensitive (item, is_exists);
 
+    item = gtk_menu_item_new_with_mnemonic (_("_Replace current playlist"));
+    gtk_container_add (GTK_CONTAINER (menu), item);
+    g_signal_connect (item, "activate", G_CALLBACK (on_menu_replace_current), uri_list);
+    gtk_widget_set_sensitive (item, is_exists);
+
     item = gtk_menu_item_new_with_mnemonic (_("Add to _new playlist"));
     gtk_container_add (GTK_CONTAINER (menu), item);
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_add_new), uri_list);
@@ -853,7 +863,7 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
         deadbeef->pl_unlock ();
     }
 
-    item = gtk_menu_item_new_with_label (_("Add to playlist ..."));
+    item = gtk_menu_item_new_with_label (_("_Add to playlist ..."));
     gtk_container_add (GTK_CONTAINER (menu), item);
     gtk_widget_set_sensitive (item, is_exists);
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), plmenu);
@@ -900,7 +910,7 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
     item = gtk_separator_menu_item_new ();
     gtk_container_add (GTK_CONTAINER (menu), item);
 
-    item = gtk_check_menu_item_new_with_mnemonic (_("Sort contents by _name"));
+    item = gtk_check_menu_item_new_with_mnemonic (_("_Sort contents by name"));
     gtk_container_add (GTK_CONTAINER (menu), item);
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_SORT_TREEVIEW);
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_sort_treeview), NULL);
@@ -993,8 +1003,7 @@ create_sidebar (void)
 
     GtkWidget           *addressbox, *searchbox;
     GtkWidget           *toolbar, *scrollwin;
-    GtkWidget           *wid, *button_add;
-    GtkWidget           *button_go;
+    GtkWidget           *wid, *button_go;
 #if !GTK_CHECK_VERSION(3,6,0)
     GtkWidget           *button_clear;
 #endif
@@ -1032,35 +1041,24 @@ create_sidebar (void)
     gtk_toolbar_set_icon_size (GTK_TOOLBAR (toolbar), GTK_ICON_SIZE_SMALL_TOOLBAR);
     gtk_toolbar_set_style (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_ICONS);
 
-    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_GO_UP));
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-go-up");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to parent directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_up), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
 
-    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_REFRESH));
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-refresh");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Refresh current directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_refresh), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
 
-    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_GOTO_TOP));
-    wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
-    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-goto-top");
-    gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to top directory"));
-    g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_root), NULL);
-    gtk_container_add (GTK_CONTAINER (toolbar), wid);
-
-    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_HOME));
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-home");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to home directory"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_go_home), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
 
-    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_CLEAR));
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-clear");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Go to default directory"));
@@ -1071,14 +1069,21 @@ create_sidebar (void)
     gtk_tool_item_set_expand (GTK_TOOL_ITEM (wid), TRUE);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
 
-    //wid = GTK_WIDGET (gtk_tool_button_new_from_stock (GTK_STOCK_ADD));
+    wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
+    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-apply");
+    gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Replace current playlist with selection"));
+    g_signal_connect (wid, "clicked", G_CALLBACK (on_button_replace_current), NULL);
+    gtk_container_add (GTK_CONTAINER (toolbar), wid);
+    gtk_widget_set_sensitive (wid, FALSE);
+    toolbar_button_replace = wid;
+
     wid = GTK_WIDGET (gtk_tool_button_new (NULL, ""));
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-add");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Add selection to current playlist"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_add_current), NULL);
     gtk_container_add (GTK_CONTAINER (toolbar), wid);
     gtk_widget_set_sensitive (wid, FALSE);
-    button_add = wid;
+    toolbar_button_add = wid;
 
     gtk_container_add (GTK_CONTAINER (scrollwin), treeview);
 
@@ -1104,7 +1109,7 @@ create_sidebar (void)
     gtk_container_set_focus_chain (GTK_CONTAINER (sidebar_navbox), focus_list);
     g_list_free (focus_list);
 
-    g_signal_connect (selection,    "changed",              G_CALLBACK (on_treeview_changed),               button_add);
+    g_signal_connect (selection,    "changed",              G_CALLBACK (on_treeview_changed),               NULL);
     g_signal_connect (treeview,     "button-press-event",   G_CALLBACK (on_treeview_mouseclick_press),      selection);
     g_signal_connect (treeview,     "button-release-event", G_CALLBACK (on_treeview_mouseclick_release),    selection);
     g_signal_connect (treeview,     "motion-notify-event",  G_CALLBACK (on_treeview_mousemove),             NULL);
@@ -1128,18 +1133,7 @@ create_sidebar (void)
 /*----------------------------*/
 
 
-// Add given URI to DeaDBeeF's current playlist
-/*
-static void
-add_single_uri_to_playlist (gchar *uri, int index)
-{
-    GList *uri_list = g_list_alloc ();
-    uri_list = g_list_append (uri_list, uri);
-    add_uri_to_playlist (uri_list, index);
-    g_list_free (uri_list);
-}
-*/
-
+/* Add given URI to DeaDBeeF's current playlist */
 static void
 add_uri_to_playlist_worker (void *data)
 {
@@ -1186,7 +1180,7 @@ error:
 }
 
 static void
-add_uri_to_playlist (GList *uri_list, int index)
+add_uri_to_playlist (GList *uri_list, int index, int append)
 {
     if (! uri_list)
         return;
@@ -1199,6 +1193,12 @@ add_uri_to_playlist (GList *uri_list, int index)
     if (index == PLT_CURRENT)
     {
         plt = deadbeef->plt_get_curr ();
+
+        if (! append)
+        {
+            deadbeef->plt_select_all (plt);
+            deadbeef->plt_delete_selected (plt);
+        }
     }
     else
     {
@@ -1607,9 +1607,10 @@ treebrowser_browse_dir (gpointer directory)
     // freeze the treeview during update to improve performance
     gtk_widget_freeze_child_notify (treeview);
     treebrowser_browse ((gchar*) directory, NULL);
+    gtk_widget_thaw_child_notify (treeview);
+
     treebrowser_load_bookmarks ();
     treeview_restore_expanded (NULL);
-    gtk_widget_thaw_child_notify (treeview);
 
     //deadbeef->mutex_unlock (treebrowser_mutex);
 }
@@ -2026,19 +2027,25 @@ on_menu_add (GtkMenuItem *menuitem, GList *uri_list)
         g_strfreev (slabel);
     }
 
-    add_uri_to_playlist (uri_list, plt);
+    add_uri_to_playlist (uri_list, plt, TRUE);
 }
 
 static void
 on_menu_add_current (GtkMenuItem *menuitem, GList *uri_list)
 {
-    add_uri_to_playlist (uri_list, PLT_CURRENT);
+    add_uri_to_playlist (uri_list, PLT_CURRENT, TRUE);  // append
+}
+
+static void
+on_menu_replace_current (GtkMenuItem *menuitem, GList *uri_list)
+{
+    add_uri_to_playlist (uri_list, PLT_CURRENT, FALSE);  // replace
 }
 
 static void
 on_menu_add_new (GtkMenuItem *menuitem, GList *uri_list)
 {
-    add_uri_to_playlist (uri_list, PLT_NEW);
+    add_uri_to_playlist (uri_list, PLT_NEW, TRUE);
 }
 
 static void
@@ -2062,6 +2069,8 @@ on_menu_refresh (GtkMenuItem *menuitem, gpointer *user_data)
 static void
 on_menu_expand_one (GtkMenuItem *menuitem, gpointer *user_data)
 {
+    trace("signal: menu -> expand one\n");
+
     GtkTreePath *path = user_data ? gtk_tree_path_copy ((GtkTreePath *) user_data) : NULL;
 
     if (! path)
@@ -2086,6 +2095,8 @@ on_menu_expand_one (GtkMenuItem *menuitem, gpointer *user_data)
 static void
 on_menu_expand_all (GtkMenuItem *menuitem, gpointer *user_data)
 {
+    trace("signal: menu -> expand all\n");
+
     GtkTreePath *path = user_data ? gtk_tree_path_copy ((GtkTreePath *) user_data) : NULL;
 
     if (! path)
@@ -2104,6 +2115,8 @@ on_menu_expand_all (GtkMenuItem *menuitem, gpointer *user_data)
 static void
 on_menu_collapse_all (GtkMenuItem *menuitem, gpointer *user_data)
 {
+    trace("signal: menu -> collapse all\n");
+
     GtkTreePath *path = user_data ? gtk_tree_path_copy ((GtkTreePath *) user_data) : NULL;
 
     if (! path)
@@ -2199,7 +2212,25 @@ on_button_add_current (void)
     g_list_foreach (rows, (GFunc) gtk_tree_path_free, NULL);
     g_list_free (rows);
 
-    add_uri_to_playlist (uri_list, PLT_CURRENT);
+    add_uri_to_playlist (uri_list, PLT_CURRENT, TRUE);  // append
+}
+
+static void
+on_button_replace_current (void)
+{
+    GtkTreeSelection *selection;
+    GList *rows, *uri_list;
+
+    // Get URI for current selection
+    selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
+    rows = gtk_tree_selection_get_selected_rows (selection, NULL);
+
+    uri_list = g_list_alloc ();
+    g_list_foreach (rows, (GFunc) get_uris_from_selection, uri_list);
+    g_list_foreach (rows, (GFunc) gtk_tree_path_free, NULL);
+    g_list_free (rows);
+
+    add_uri_to_playlist (uri_list, PLT_CURRENT, FALSE);  // replace
 }
 
 static void
@@ -2226,14 +2257,6 @@ on_button_go_home (void)
 }
 
 static void
-on_button_go_root (void)
-{
-    gchar *uri = g_strdup (G_DIR_SEPARATOR_S);
-    treebrowser_chroot (uri);
-    g_free (uri);
-}
-
-static void
 on_button_go_default (void)
 {
     gchar *uri = get_default_dir ();
@@ -2244,6 +2267,8 @@ on_button_go_default (void)
 static void
 on_addressbar_changed ()
 {
+    trace("signal: adressbar changed\n");
+
     gchar *uri = g_strdup( gtk_entry_get_text (GTK_ENTRY (gtk_bin_get_child( GTK_BIN (addressbar)))));
     treebrowser_chroot (uri);
     g_free (uri);
@@ -2297,6 +2322,7 @@ on_searchbar_changed ()
 {
     if (last_searchbar_change == 0)
         last_searchbar_change = g_get_real_time ();
+
     g_timeout_add (100, on_searchbar_timeout, NULL);
 }
 
@@ -2346,6 +2372,7 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
 
         if (event->type == GDK_2BUTTON_PRESS)
         {
+
             // toggle expand/collapse
             if (is_expanded)
                 gtk_tree_view_collapse_row (GTK_TREE_VIEW (treeview), path);
@@ -2409,11 +2436,15 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
 
             if (! (event->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)))
             {
-                add_uri_to_playlist (uri_list, PLT_CURRENT);
+                add_uri_to_playlist (uri_list, PLT_CURRENT, TRUE);  // append
+            }
+            else if (event->state & GDK_CONTROL_MASK)
+            {
+                add_uri_to_playlist (uri_list, PLT_CURRENT, FALSE);  // replace
             }
             else if (event->state & GDK_SHIFT_MASK)
             {
-                add_uri_to_playlist (uri_list, PLT_NEW);
+                add_uri_to_playlist (uri_list, PLT_NEW, TRUE);
             }
         }
     }
@@ -2518,48 +2549,18 @@ on_treeview_mousemove (GtkWidget *widget, GdkEventButton *event)
     return TRUE;
 }
 
-void
-on_treeview_changed_helper (gpointer data, gpointer userdata)
-{
-    GtkTreeIter     iter;
-    gchar           *uri;
-
-    GtkTreePath     *path   = data;
-
-    if (! gtk_tree_model_get_iter (GTK_TREE_MODEL (treestore), &iter, path))
-        return;
-
-    gtk_tree_model_get (GTK_TREE_MODEL (treestore), &iter,
-                    TREEBROWSER_COLUMN_URI, &uri, -1);
-    if (uri == NULL)
-        return;
-
-    if (g_file_test (uri, G_FILE_TEST_EXISTS))
-    {
-        if (g_file_test (uri, G_FILE_TEST_IS_DIR))
-            treebrowser_browse (uri, &iter);
-    }
-    else
-        tree_store_iter_clear_nodes (treestore, &iter, TRUE);
-
-    g_free (uri);
-}
-
 static void
 on_treeview_changed (GtkWidget *widget, gpointer user_data)
 {
-    GList           *rows;
-    gboolean        has_selection = FALSE;
+    gboolean has_selection = FALSE;
 
-    rows = gtk_tree_selection_get_selected_rows (GTK_TREE_SELECTION (widget), NULL);
-    has_selection = (g_list_length (rows) > 0);
+    if (gtk_tree_selection_count_selected_rows (GTK_TREE_SELECTION (widget)) > 0)
+        has_selection = TRUE;
 
-    g_list_foreach (rows, (GFunc) on_treeview_changed_helper, NULL);
-    g_list_foreach (rows, (GFunc)gtk_tree_path_free, NULL);
-    g_list_free (rows);
-
-    if (user_data)
-        gtk_widget_set_sensitive (GTK_WIDGET (user_data), has_selection);
+    if (toolbar_button_add)
+        gtk_widget_set_sensitive (GTK_WIDGET (toolbar_button_add), has_selection);
+    if (toolbar_button_replace)
+        gtk_widget_set_sensitive (GTK_WIDGET (toolbar_button_replace), has_selection);
 }
 
 static void
@@ -2580,14 +2581,7 @@ on_treeview_row_expanded (GtkWidget *widget, GtkTreeIter *iter,
         gtk_tree_view_expand_row (GTK_TREE_VIEW (treeview), path, FALSE);
         flag_on_expand_refresh = FALSE;
     }
-/*
-    if (CONFIG_SHOW_ICONS)
-    {
-        GdkPixbuf *icon = get_icon_for_uri (uri);
-        gtk_tree_store_set (treestore, iter, TREEBROWSER_COLUMN_ICON, icon, -1);
-        g_object_unref (icon);
-    }
-*/
+
     GSList *node = treeview_check_expanded (uri);
     if (! node)
     {
@@ -2608,14 +2602,7 @@ on_treeview_row_collapsed (GtkWidget *widget, GtkTreeIter *iter,
                     TREEBROWSER_COLUMN_URI, &uri, -1);
     if (! uri)
         return;
-/*
-    if (CONFIG_SHOW_ICONS)
-    {
-        GdkPixbuf *icon = get_icon_for_uri (uri);
-        gtk_tree_store_set (treestore, iter, TREEBROWSER_COLUMN_ICON, icon, -1);
-        g_object_unref (icon);
-    }
-*/
+
     GSList *node = treeview_check_expanded (uri);
     if (node)
     {
@@ -2918,7 +2905,20 @@ static DB_misc_t plugin =
     .plugin.id              = "filebrowser",
 #endif
     .plugin.name            = "File Browser",
-    .plugin.descr           = "Simple file browser,\n" "based on Geany's treebrowser plugin",
+    .plugin.descr           =
+        "Simple file browser, based on Geany's treebrowser plugin\n"
+        "\n"
+        "Project homepage: http://sourceforge.net/projects/deadbeef-fb\n"
+        "Issue tracker: https://gitlab.com/zykure/deadbeef-fb/issues\n"
+        "\n"
+        "MOUSECLICK ACTIONS:"
+        "  * left-click to select (drag&drop to add to playlist)\n"
+        "    * ctrl/shift + left-click to multi-select (but only works if tree level is the same)\n"
+        "  * middle-click to append to current playlist\n"
+        "    * ctrl + middle-click to replace current playlist\n"
+        "    * shift + middle-click to create new playlist\n"
+        "  * right-click for popup menu\n"
+    ,
     .plugin.copyright       =
         "Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>\n"
         "\n"
@@ -2927,6 +2927,7 @@ static DB_misc_t plugin =
         "  420MuNkEy\n"
         "\n"
         "Based on the Geany treebrowser plugin by Adrian Dimitrov.\n"
+        "\n"
         "\n"
         "This program is free software; you can redistribute it and/or\n"
         "modify it under the terms of the GNU General Public License\n"
