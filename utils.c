@@ -320,3 +320,19 @@ tree_view_collapse_rows_recursive (GtkTreeModel *model, GtkTreeView *view, GtkTr
 
     return TRUE;
 }
+
+/* Clear nodes from tree, optionally deleting the root node */
+void
+tree_store_iter_clear_nodes (GtkTreeStore *store, gpointer iter, gboolean delete_root)
+{
+    GtkTreeIter i;
+    while (gtk_tree_model_iter_children (GTK_TREE_MODEL (store), &i, iter))
+    {
+        if (gtk_tree_model_iter_has_child (GTK_TREE_MODEL (store), &i))
+            tree_store_iter_clear_nodes (store, &i, TRUE);
+        if (gtk_tree_store_iter_is_valid (GTK_TREE_STORE (store), &i))
+            gtk_tree_store_remove (GTK_TREE_STORE (store), &i);
+    }
+    if (delete_root)
+        gtk_tree_store_remove (GTK_TREE_STORE (store), iter);
+}
