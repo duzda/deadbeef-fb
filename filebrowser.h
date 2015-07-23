@@ -55,6 +55,7 @@
 #define     CONFSTR_FB_SEARCH_DELAY         "filebrowser.search_delay"
 #define     CONFSTR_FB_FULLSEARCH_WAIT      "filebrowser.fullsearch_wait"
 #define     CONFSTR_FB_HIDE_NAVIGATION      "filebrowser.hide_navigation"
+#define     CONFSTR_FB_HIDE_SEARCH          "filebrowser.hide_search"
 
 #define     DEFAULT_FB_DEFAULT_PATH         ""
 #define     DEFAULT_FB_FILTER               ""  // auto-filter enabled by default
@@ -136,7 +137,7 @@ static gboolean     treebrowser_browse (gchar *directory, gpointer parent);
 static void         treebrowser_bookmarks_set_state (void);
 static void         treebrowser_load_bookmarks (void);
 
-static void         on_menu_toggle (GtkMenuItem *menuitem, gpointer *user_data);
+static void         on_mainmenu_toggle (GtkMenuItem *menuitem, gpointer *user_data);
 
 static void         on_menu_add (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_add_current (GtkMenuItem *menuitem, GList *uri_list);
@@ -145,15 +146,16 @@ static void         on_menu_add_new (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_enter_directory (GtkMenuItem *menuitem, gchar *uri);
 static void         on_menu_go_up (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_refresh (GtkMenuItem *menuitem, gpointer *user_data);
-static void         on_menu_expand_one(GtkMenuItem *menuitem, gpointer *user_data);
-static void         on_menu_expand_all(GtkMenuItem *menuitem, gpointer *user_data);
-static void         on_menu_collapse_all(GtkMenuItem *menuitem, gpointer *user_data);
-static void         on_menu_copy_uri(GtkMenuItem *menuitem, GList *uri_list);
+static void         on_menu_expand_one (GtkMenuItem *menuitem, gpointer *user_data);
+static void         on_menu_expand_all (GtkMenuItem *menuitem, gpointer *user_data);
+static void         on_menu_collapse_all (GtkMenuItem *menuitem, gpointer *user_data);
+static void         on_menu_copy_uri (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_sort_treeview (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_show_bookmarks (GtkMenuItem *menuitem, gpointer *user_data);
-static void         on_menu_show_hidden_files(GtkMenuItem *menuitem, gpointer *user_data);
-static void         on_menu_use_filter(GtkMenuItem *menuitem, gpointer *user_data);
-static void         on_menu_hide_navigation(GtkMenuItem *menuitem, gpointer *user_data);
+static void         on_menu_show_hidden_files( GtkMenuItem *menuitem, gpointer *user_data);
+static void         on_menu_use_filter (GtkMenuItem *menuitem, gpointer *user_data);
+static void         on_menu_hide_navigation (GtkMenuItem *menuitem, gpointer *user_data);
+static void         on_menu_hide_search (GtkMenuItem *menuitem, gpointer *user_data);
 
 static void         on_button_add_current (void);
 static void         on_button_replace_current (void);
