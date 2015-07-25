@@ -15,8 +15,8 @@ DISTPACKAGENAME=${PACKAGENAME}-devel
 INSTALLDIR=${BUILDROOT}/../install
 
 DATE=`date +%Y%m%d`
-BINTARGET=${BUILDROOT}/../release/${PACKAGENAME}${FLAG}_${DATE}.tar.gz
-SRCTARGET=${BUILDROOT}/../release/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
+BINTARGET=${BUILDROOT}/../release/binary/${PACKAGENAME}${FLAG}_${DATE}.tar.gz
+SRCTARGET=${BUILDROOT}/../release/source/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
 
 rm -rf ${INSTALLDIR}
 mkdir -p ${INSTALLDIR}/${PACKAGENAME}
@@ -38,9 +38,12 @@ rm -f ${DISTPACKAGENAME}.tar.gz
 make dist PACKAGE=${PACKAGENAME} || exit $?
 mv ${DISTPACKAGENAME}.tar.gz ${SRCTARGET} || exit $?
 
+cd ${BUILDROOT}/../release/
 ls -lh ${SRCTARGET} ${BINTARGET}
+cp -v ${BUILDROOT}/README ./README || exit $?
+git status
 echo "> Press CTRL+C to abort ..."
 sleep 5
-
-scp ${SRCTARGET} zykure@frs.sourceforge.net:/home/frs/project/deadbeef-fb/master/
-scp ${BINTARGET} zykure@frs.sourceforge.net:/home/frs/project/deadbeef-fb/master/
+git commit -a -m "release ${DATE}" || exit $?
+git push
+cd ${BUILDROOT}
