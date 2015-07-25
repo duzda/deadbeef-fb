@@ -29,7 +29,7 @@
 
 
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    83
+#define PLUGIN_VERSION_MINOR    84
 
 #include <sys/types.h>
 #include <sys/stat.h>
