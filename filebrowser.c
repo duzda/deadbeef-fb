@@ -117,9 +117,8 @@ static GtkWidget *          searchbar                   = NULL;
 static gchar *              searchbar_text              = NULL;
 static GtkTreeIter          bookmarks_iter;
 static gboolean             bookmarks_expanded          = FALSE;
+static GtkTreeViewColumn *  treeview_column_icon        = NULL;
 static GtkTreeViewColumn *  treeview_column_text        = NULL;
-static GtkCellRenderer *    render_icon                 = NULL;
-static GtkCellRenderer *    render_text                 = NULL;
 static GSList *             expanded_rows               = NULL;
 static gchar *              known_extensions            = NULL;
 static gboolean             flag_on_expand_refresh      = FALSE;
@@ -980,32 +979,44 @@ create_view_and_model (void)
 {
     trace("create view and model\n");
 
-    GtkWidget * view        = gtk_tree_view_new ();
-    treeview_column_text    = gtk_tree_view_column_new ();
-    render_icon             = gtk_cell_renderer_pixbuf_new ();
-    render_text             = gtk_cell_renderer_text_new ();
+    GtkWidget *view                 = gtk_tree_view_new ();
+    GtkCellRenderer *render_icon    = gtk_cell_renderer_pixbuf_new ();
+    GtkCellRenderer *render_text    = gtk_cell_renderer_text_new ();
+
+    treeview_column_icon            = gtk_tree_view_column_new ();
+    treeview_column_text            = gtk_tree_view_column_new ();
 
     gtk_widget_set_name (view, "deadbeef_filebrowser_treeview");
 
     gtk_widget_set_events (view, GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK | GDK_BUTTON_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
 
     gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (view), FALSE);
-    gtk_tree_view_append_column (GTK_TREE_VIEW (view), treeview_column_text);
 
-    gtk_tree_view_column_pack_start (treeview_column_text, render_icon, FALSE);
-    gtk_tree_view_column_set_attributes (treeview_column_text, render_icon,
+    // TREEBROWSER_COLUMN_ICON
+    gtk_tree_view_append_column (GTK_TREE_VIEW (view), treeview_column_icon);
+    gtk_tree_view_column_pack_start (treeview_column_icon, render_icon, TRUE);
+    //gtk_tree_view_column_pack_start (treeview_column_icon, render_dummy, FALSE);
+    gtk_tree_view_column_set_attributes (treeview_column_icon, render_icon,
                     "pixbuf", TREEBROWSER_RENDER_ICON, NULL);
+    gtk_tree_view_column_set_spacing (treeview_column_icon, 0);
 
+    // TREEBROWSER_COLUMN_NAME
+    gtk_tree_view_append_column (GTK_TREE_VIEW (view), treeview_column_text);
     gtk_tree_view_column_pack_start (treeview_column_text, render_text, TRUE);
     gtk_tree_view_column_add_attribute (treeview_column_text, render_text,
                     "text", TREEBROWSER_RENDER_TEXT);
+    gtk_tree_view_column_set_spacing (treeview_column_text, 0);
+
+    gtk_cell_renderer_set_alignment (render_icon, 0, 0.5);  // left-middle
+    gtk_cell_renderer_set_alignment (render_text, 0, 0.5);  // left-middle
+    gtk_cell_renderer_set_padding (render_text, 4, 0);
 
     if (CONFIG_FONT_SIZE > 0)
         g_object_set (render_text, "size", CONFIG_FONT_SIZE*1024, NULL);
 
     gtk_tree_view_set_enable_search (GTK_TREE_VIEW (view), TRUE);
-    gtk_tree_view_set_search_column (GTK_TREE_VIEW (view), TREEBROWSER_COLUMN_NAME);
     gtk_tree_view_set_expander_column (GTK_TREE_VIEW (view), TREEBROWSER_COLUMN_ICON);
+    gtk_tree_view_set_search_column (GTK_TREE_VIEW (view), TREEBROWSER_COLUMN_NAME);
 
     //gtk_tree_view_set_rubber_banding (GTK_TREE_VIEW (view), TRUE);
     gtk_tree_view_set_show_expanders (GTK_TREE_VIEW (view), TRUE);
@@ -1021,8 +1032,8 @@ create_view_and_model (void)
     gtk_tree_view_set_enable_tree_lines (GTK_TREE_VIEW (view), CONFIG_SHOW_TREE_LINES);
 #endif
 
-    treestore = gtk_tree_store_new (TREEBROWSER_COLUMNC, GDK_TYPE_PIXBUF,
-                    G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT);
+    treestore = gtk_tree_store_new (TREEBROWSER_COLUMNC,
+                    GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT);
     gtk_tree_view_set_model (GTK_TREE_VIEW (view), GTK_TREE_MODEL (treestore));
 
     return view;
@@ -2327,6 +2338,10 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
     gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (treeview), event->x, event->y,
                     &path, &column, NULL, NULL);
 
+    {
+        trace("expand!\n");
+    }
+
     mouseclick_lastpos[0] = event->x;
     mouseclick_lastpos[1] = event->y;
     mouseclick_dragwait = FALSE;
@@ -2343,9 +2358,10 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
             return TRUE;
         }
 
-        if (event->type == GDK_2BUTTON_PRESS)
+        // expand/collapse on double-click anywhere or single-click on icon/expander
+        if ( (event->type == GDK_BUTTON_PRESS && column == treeview_column_icon)
+                || (event->type == GDK_2BUTTON_PRESS) )
         {
-
             // toggle expand/collapse
             if (is_expanded)
                 gtk_tree_view_collapse_row (GTK_TREE_VIEW (treeview), path);
@@ -2353,7 +2369,8 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
                 gtk_tree_view_expand_row (GTK_TREE_VIEW (treeview), path, FALSE);
             gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
         }
-        else if (event->type == GDK_BUTTON_PRESS)
+
+        if (event->type == GDK_BUTTON_PRESS)
         {
             mouseclick_dragwait = TRUE;
             if (! (event->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)))
@@ -2871,17 +2888,34 @@ static DB_misc_t plugin =
 #endif
     .plugin.name            = "File Browser",
     .plugin.descr           =
+       //0.........1.........2.........3.........4.........5.........6.........7.......::8
         "Simple file browser, based on Geany's treebrowser plugin\n"
         "\n"
         "Project homepage: http://sourceforge.net/projects/deadbeef-fb\n"
         "Issue tracker: https://gitlab.com/zykure/deadbeef-fb/issues\n"
         "\n"
         "BOOKMARKS:\n"
-        "If you don't want to use GTK bookmarks, you can create your own\n"
-        "bookmark file to be used only by the filebrowser\n"
-        "(default location: ~/.config/deadbeef/bookmarks).\n"
+        "If you don't want to use GTK bookmarks, you can create your own bookmarks file\n"
+        "to be used only by the filebrowser (default file: ~/.config/deadbeef/bookmarks).\n"
+        "\n"
+        "SEARCH BEHAVIOR:\n"
+        "By default, the search bar filters the items visible in the tree by their full\n"
+        "path. When a search text is entered, only those items that contain the text in\n"
+        "path are shown. When the search is cleared, all items are shown again.\n"
+        "The tree is expanded fully after some number of characters have been entered\n"
+        "into the search bar. Then the filebrowser will traverse the full directory\n"
+        "tree and check every file inside it. Note that this can take a long yime on\n"
+        "large trees. The number of characters to trigger this behavior can be adjusted\n"
+        "in the options (default is 5 characters).\n"
+        "\n"
+        "COVERART ICONS:\n"
+        "Each directory that is shown in the tree is searched for a coverart image\n"
+        "must have a specific name (like 'cover.jpg'). If it is found, it is shown\n"
+        "instead of the default folder icon. To speed things up, the thumbnail image\n"
+        "is stored to disk inside DeaDBeeF's cache directory.\n"
         "\n"
         "MOUSECLICK ACTIONS:\n"
+        "There are different mouse-button actions when you click on a tree item:\n"
         "\t* left-click to select (drag&drop to add to playlist)\n"
         "\t\t* ctrl + left-click to multi-select\n"
         "\t\t* shift + left-click to range-select (only works on same tree level)\n"
@@ -2889,6 +2923,7 @@ static DB_misc_t plugin =
         "\t\t* ctrl + middle-click to replace current playlist\n"
         "\t\t* shift + middle-click to create new playlist\n"
         "\t* right-click for popup menu\n"
+       //0.........1.........2.........3.........4.........5.........6.........7.......::8
     ,
     .plugin.copyright       =
         "Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>\n"

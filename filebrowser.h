@@ -60,7 +60,7 @@
 
 #define     DEFAULT_FB_DEFAULT_PATH         ""
 #define     DEFAULT_FB_FILTER               ""  // auto-filter enabled by default
-#define     DEFAULT_FB_COVERART             "cover.jpg;folder.jpg;front.jpg"
+#define     DEFAULT_FB_COVERART             "cover.png;cover.jpg;folder.png;folder.jpg;front.png;front.jpg"
 #define     DEFAULT_FB_BOOKMARKS_FILE       "$HOME/.config/deadbeef/bookmarks"
 
 
