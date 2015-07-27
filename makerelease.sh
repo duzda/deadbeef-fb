@@ -41,6 +41,7 @@ mv ${DISTPACKAGENAME}.tar.gz ${SRCTARGET} || exit $?
 cd ${BUILDROOT}/../release/
 ls -lh ${SRCTARGET} ${BINTARGET}
 cp -v ${BUILDROOT}/README ./README || exit $?
+git add ${SRCTARGET} ${BINTARGET}
 git status
 echo "> Press CTRL+C to abort ..."
 sleep 5
