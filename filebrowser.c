@@ -2229,7 +2229,7 @@ treebrowser_chroot (gchar *directory)
 
     setptr (addressbar_last_address, g_strdup (directory));
 
-    treebrowser_browse_dir (directory);
+    treebrowser_browse_dir (NULL);  // use addressbar
     //trace("starting thread for adding files to playlist\n");
     //intptr_t tid = deadbeef->thread_start (treebrowser_browse_dir, NULL);
     //deadbeef->thread_detach (tid);
