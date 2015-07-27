@@ -131,14 +131,24 @@ utils_get_utf8_from_locale(const gchar *locale_text)
 }
 
 /* Get current home directory */
-gchar *
-utils_get_home_dir (void)
+void
+utils_expand_home_dir (gchar *path)
 {
-    /* Note Glib documentation - get_home_dir() may not give the real home directory! */
-    if (g_getenv ("HOME"))
-        return g_strconcat (g_getenv ("HOME"), "/Music", NULL);
+    if (g_strrstr (path, "$HOME"))
+    {
+        gchar **split = g_strsplit (path, "$HOME", 0);
+        g_free (path);
+        path = g_strjoinv (g_getenv ("HOME"), split);
+        g_strfreev (split);
+    }
 
-    return g_strconcat (g_get_home_dir (), "/Music", NULL);
+    if (g_strrstr (path, "${HOME}"))
+    {
+        gchar **split = g_strsplit (path, "${HOME}", 0);
+        g_free (path);
+        path = g_strjoinv (g_getenv ("HOME"), split);
+        g_strfreev (split);
+    }
 }
 
 /* Get URI tooltip from URI, escaping ampersands ('&') */

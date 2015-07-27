@@ -154,7 +154,6 @@ static void         on_menu_expand_one (GtkMenuItem *menuitem, gpointer *user_da
 static void         on_menu_expand_all (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_collapse_all (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_copy_uri (GtkMenuItem *menuitem, GList *uri_list);
-static void         on_menu_sort_treeview (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_show_bookmarks (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_show_hidden_files( GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_use_filter (GtkMenuItem *menuitem, gpointer *user_data);
