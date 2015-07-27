@@ -31,3 +31,8 @@ void            utils_construct_style (GtkWidget *widget, const gchar *bgcolor, 
 gboolean        tree_view_expand_rows_recursive (GtkTreeModel *model, GtkTreeView *view, GtkTreePath *parent, gint max_depth);
 gboolean        tree_view_collapse_rows_recursive (GtkTreeModel *model, GtkTreeView *view, GtkTreePath *parent, gint max_depth);
 void            tree_store_iter_clear_nodes (GtkTreeStore *store, gpointer iter, gboolean delete_root);
+
+#if GTK_CHECK_VERSION(3,6,0)
+gint            gtk_grid_get_number_of_rows (GtkGrid *grid, gint column);
+gchar *         gtk_color_chooser_get_hex (GtkColorChooser *chooser);
+#endif

@@ -116,6 +116,9 @@ static int          restore_interface (GtkWidget *cont);
 static GtkWidget *  create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list);
 static GtkWidget *  create_view_and_model (void);
 static void         create_sidebar (void);
+#if GTK_CHECK_VERSION(3,6,0)
+static void         create_settings_dialog (void);
+#endif
 
 //static void         add_single_uri_to_playlist (gchar *uri, int plt);
 static void         add_uri_to_playlist_worker (void *data);
@@ -158,6 +161,9 @@ static void         on_menu_use_filter (GtkMenuItem *menuitem, gpointer *user_da
 static void         on_menu_hide_navigation (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_hide_search (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_hide_toolbar (GtkMenuItem *menuitem, gpointer *user_data);
+#if GTK_CHECK_VERSION(3,6,0)
+static void         on_menu_config (GtkMenuItem *menuitem, gpointer user_data);
+#endif
 
 static void         on_button_add_current (void);
 static void         on_button_replace_current (void);

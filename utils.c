@@ -136,8 +136,9 @@ utils_get_home_dir (void)
 {
     /* Note Glib documentation - get_home_dir() may not give the real home directory! */
     if (g_getenv ("HOME"))
-        return g_strdup (g_getenv ("HOME"));
-    return g_strdup (g_get_home_dir ());
+        return g_strconcat (g_getenv ("HOME"), "/Music", NULL);
+
+    return g_strconcat (g_get_home_dir (), "/Music", NULL);
 }
 
 /* Get URI tooltip from URI, escaping ampersands ('&') */
@@ -336,3 +337,33 @@ tree_store_iter_clear_nodes (GtkTreeStore *store, gpointer iter, gboolean delete
     if (delete_root)
         gtk_tree_store_remove (GTK_TREE_STORE (store), iter);
 }
+
+#if GTK_CHECK_VERSION(3,6,0)
+/* Get number of rows in a grid where the given column is not empty */
+gint
+gtk_grid_get_number_of_rows (GtkGrid *grid, gint column)
+{
+    int row = 0;
+    while (gtk_grid_get_child_at (grid, column, row) != NULL)
+    {
+        row++;
+    }
+    return row;
+}
+
+/* Get color chooser result as hex string */
+gchar *
+gtk_color_chooser_get_hex (GtkColorChooser *chooser)
+{
+    gchar *hex;
+    GdkRGBA color;
+
+    gtk_color_chooser_get_rgba (chooser, &color);
+
+    hex = g_strdup ("#000000");
+    g_snprintf (hex, 8, "#%02x%02x%02x",
+            (unsigned int)(255*color.red), (unsigned int)(255*color.green), (unsigned int)(255*color.blue));
+
+    return hex;
+}
+#endif

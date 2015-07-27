@@ -416,6 +416,8 @@ get_uris_from_selection (gpointer data, gpointer userdata)
 static void
 update_rootdirs ()
 {
+    trace("update rootdirs\n");
+
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_list_store_clear (GTK_LIST_STORE (gtk_combo_box_get_model (GTK_COMBO_BOX (addressbar))));
 #else
@@ -423,7 +425,7 @@ update_rootdirs ()
 #endif
 
     gchar **config_rootdirs;
-    config_rootdirs = g_strsplit (deadbeef->conf_get_str_fast (CONFSTR_FB_DEFAULT_PATH,        ""), ";", 0);
+    config_rootdirs = g_strsplit (CONFIG_DEFAULT_PATH, ";", 0);
 
     for (int i = 0; i < g_strv_length (config_rootdirs); i++)
     {
@@ -512,7 +514,7 @@ on_config_changed (uintptr_t ctx)
     gchar *     bgcolor_sel     = g_strdup (CONFIG_COLOR_BG_SEL);
     gchar *     fgcolor_sel     = g_strdup (CONFIG_COLOR_BG_SEL);
 
-    gboolean do_update              = FALSE;
+    gboolean do_update = FALSE;
 
     load_config ();
 
@@ -571,8 +573,10 @@ on_config_changed (uintptr_t ctx)
                 g_free (autofilter);
             }
             else
+            {
                 if (! utils_str_equal (filter, CONFIG_FILTER))
                     do_update = TRUE;
+            }
         }
 
         if (! utils_str_equal (coverart, CONFIG_COVERART))
@@ -595,7 +599,9 @@ on_config_changed (uintptr_t ctx)
     g_free (fgcolor_sel);
 
     if (do_update)
+    {
         treeview_update (NULL);
+    }
 
     return 0;
 }
@@ -969,6 +975,17 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_HIDE_TOOLBAR);
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_hide_toolbar), NULL);
 
+#if GTK_CHECK_VERSION(3,6,0)
+    // new settings dialog
+    item = gtk_separator_menu_item_new ();
+    gtk_container_add (GTK_CONTAINER (menu), item);
+
+    item = gtk_check_menu_item_new_with_mnemonic (_("_Configure ..."));
+    gtk_container_add (GTK_CONTAINER (menu), item);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_HIDE_TOOLBAR);
+    g_signal_connect (item, "activate", G_CALLBACK (on_menu_config), NULL);
+#endif
+
     gtk_widget_show_all (menu);
 
     return menu;
@@ -1177,6 +1194,580 @@ create_sidebar (void)
     if (CONFIG_HIDE_TOOLBAR)
         gtk_widget_hide (sidebar_toolbar);
 }
+
+#if GTK_CHECK_VERSION(3,6,0)
+static void settings_update_paths (GtkGrid *grid, gchar *config_paths);
+static gchar* settings_get_paths(GtkGrid *grid);
+
+static void
+on_settings_radio_filter_toggled (GtkToggleButton *togglebutton, gpointer user_data)
+{
+    gboolean enabled = gtk_toggle_button_get_active (togglebutton);
+    gtk_widget_set_sensitive (GTK_WIDGET (user_data), enabled);
+}
+
+static void
+on_settings_path_remove (GtkButton *button, gpointer label)
+{
+    GtkWidget *grid;
+    const gchar *path, *dirname;
+
+    grid = gtk_widget_get_parent (GTK_WIDGET (label));
+    path = gtk_label_get_text (GTK_LABEL (label));
+
+    int numrows = gtk_grid_get_number_of_rows (GTK_GRID (grid), 0);  // get rows with labels
+    for (int row = 0; row < numrows; row++)
+    {
+        label = gtk_grid_get_child_at (GTK_GRID (grid), 0, row);
+        if (label == NULL)
+            break;
+
+        dirname = gtk_label_get_text (GTK_LABEL (label));
+
+        if (! g_ascii_strncasecmp (path, dirname, 256))
+        {
+            gtk_grid_remove_row (GTK_GRID (grid), row);
+            gtk_widget_show_all (GTK_WIDGET (grid));
+        }
+    }
+}
+
+static void
+on_settings_path_add (GtkButton *button, gpointer grid)
+{
+    GtkWidget *dialog;
+    GtkWidget *label, *button_remove;
+    gchar *dirname;
+
+    dialog = gtk_file_chooser_dialog_new (
+                "Add Directory", GTK_WINDOW (gtkui_plugin->get_mainwin ()),
+                GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+                _("_Cancel"), GTK_RESPONSE_CANCEL,
+                _("_Open"), GTK_RESPONSE_ACCEPT,
+                NULL);
+
+    if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+    {
+        GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+        dirname = gtk_file_chooser_get_filename (chooser);
+
+        int row = gtk_grid_get_number_of_rows (GTK_GRID (grid), 0);  // get rows with labels
+        gtk_grid_insert_row (GTK_GRID (grid), row);
+
+        label = gtk_label_new (dirname);
+        gtk_label_set_xalign (GTK_LABEL (label), 0.);
+        gtk_grid_attach (GTK_GRID (grid), label, 0, row, 1, 1);
+        gtk_widget_set_hexpand (label, TRUE);
+
+        button_remove = GTK_WIDGET (gtk_tool_button_new (NULL, "DEL"));
+        gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (button_remove), "gtk-delete");
+        gtk_grid_attach (GTK_GRID (grid), button_remove, 1, row, 1, 1);
+        g_signal_connect (button, "clicked", G_CALLBACK (on_settings_path_remove), label);
+
+        gtk_widget_show_all (GTK_WIDGET (grid));
+    }
+
+    gtk_widget_destroy (dialog);
+}
+
+static gchar *
+settings_get_paths(GtkGrid *grid)
+{
+    GtkWidget *label;
+    gchar *paths, *newpaths;
+    const gchar *dirname;
+
+    paths = NULL;
+
+    int numrows = gtk_grid_get_number_of_rows (GTK_GRID (grid), 0);  // get rows with labels
+    trace("%d rows\n",numrows);
+    for (int row = 0; row < numrows; row++)
+    {
+        label = gtk_grid_get_child_at (grid, 0, row);
+        if (label == NULL)
+            break;
+
+        dirname = gtk_label_get_text (GTK_LABEL (label));
+        trace("%d: %s\n",row,dirname);
+
+        if (paths == NULL)
+            paths = g_strdup (dirname);
+        else
+        {
+            newpaths = g_strconcat (paths, ";", dirname, NULL);
+            g_free (paths);
+            paths = newpaths;
+        }
+    }
+
+    return paths;
+}
+
+static void
+settings_update_paths (GtkGrid *grid, gchar *config_paths)
+{
+    // clean the grid
+    GList *children, *iter;
+    children = gtk_container_get_children (GTK_CONTAINER (grid));
+    for (iter = children; iter != NULL; iter = g_list_next (iter))
+        gtk_widget_destroy (GTK_WIDGET (iter->data));
+    g_list_free (children);
+
+    GtkWidget *label, *button;
+    gchar **path_list;
+    path_list = g_strsplit (config_paths, ";", 0);
+
+    int row;
+    for (row = 0; row < g_strv_length (path_list); row++)
+    {
+        if (strlen (path_list[row]) == 0)
+            continue;
+
+        label = gtk_label_new (path_list[row]);
+        gtk_label_set_xalign (GTK_LABEL (label), 0.);
+        gtk_grid_attach (grid, label, 0, row, 1, 1);
+        gtk_widget_set_hexpand (label, TRUE);
+
+        button = GTK_WIDGET (gtk_tool_button_new (NULL, "DEL"));
+        gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (button), "gtk-delete");
+        gtk_grid_attach (grid, button, 1, row, 1, 1);
+        g_signal_connect (button, "clicked", G_CALLBACK (on_settings_path_remove), label);
+    }
+    g_strfreev (path_list);
+
+    button = GTK_WIDGET (gtk_tool_button_new (NULL, "ADD"));
+    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (button), "gtk-add");
+    gtk_grid_attach (grid, button, 1, row+1, 1, 1);
+    g_signal_connect (button, "clicked", G_CALLBACK (on_settings_path_add), grid);
+
+    gtk_widget_show_all (GTK_WIDGET (grid));
+
+    g_free (config_paths);
+}
+
+static void
+create_settings_dialog ()
+{
+    GtkWidget *settings = gtk_dialog_new_with_buttons (
+            _("Filebrowser Plugin Settings"),
+            GTK_WINDOW (gtkui_plugin->get_mainwin ()),
+            GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+            _("_Apply"), GTK_RESPONSE_APPLY,
+            _("_Cancel"), GTK_RESPONSE_CANCEL,
+            _("_OK"), GTK_RESPONSE_OK,
+            NULL);
+
+    gtk_window_set_default_size (GTK_WINDOW (settings), 400, 300);
+
+    GtkWidget *content              = gtk_dialog_get_content_area (GTK_DIALOG (settings));
+    GtkWidget *notebook             = gtk_notebook_new ();
+    GtkWidget *page1                = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *page2                = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *page3                = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *page4                = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *page5                = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
+
+    GtkWidget *frame_plugin         = gtk_frame_new (_(" Plugin  "));
+    GtkWidget *grid_plugin          = gtk_grid_new ();
+    GtkWidget *check_enabled        = gtk_check_button_new_with_mnemonic (_("Enable filebrowser _plugin"));
+    GtkWidget *check_save_view      = gtk_check_button_new_with_mnemonic (_("_Save tree state (restore expanded/collapsed rows)"));
+
+    GtkWidget *frame_layout         = gtk_frame_new (_(" Layout  "));
+    GtkWidget *grid_layout          = gtk_grid_new ();
+    GtkWidget *check_hidden         = gtk_check_button_new_with_mnemonic (_("_Hide everything"));
+    GtkWidget *check_hide_nav       = gtk_check_button_new_with_mnemonic (_("Hide _navigation area"));
+    GtkWidget *check_hide_search    = gtk_check_button_new_with_mnemonic (_("Hide _search bar"));
+    GtkWidget *check_hide_tools     = gtk_check_button_new_with_mnemonic (_("Hide _toolbar"));
+
+    GtkWidget *frame_paths          = gtk_frame_new (_(" Default paths  "));
+    GtkWidget *grid_paths           = gtk_grid_new ();
+
+    GtkWidget *frame_search         = gtk_frame_new (_(" Search  "));
+    GtkWidget *grid_search          = gtk_grid_new ();
+    GtkWidget *lbl_search_delay     = gtk_label_new (_("Delay search while typing (millisec):  "));
+    GtkWidget *spin_search_delay    = gtk_spin_button_new_with_range (100, 2000, 100);
+    GtkWidget *lbl_fullsearch_wait  = gtk_label_new (_("Expand full tree after typing N characters:  "));
+    GtkWidget *spin_fullsearch_wait = gtk_spin_button_new_with_range (1, 10, 1);
+
+    GtkWidget *frame_filter         = gtk_frame_new (_(" Shown files  "));
+    GtkWidget *grid_filter          = gtk_grid_new ();
+    GtkWidget *check_show_hidden    = gtk_check_button_new_with_mnemonic (_("Show _hiden files"));
+    GtkWidget *check_filter_enabled = gtk_check_button_new_with_mnemonic (_("_Filter files by extension"));
+    GtkWidget *radio_filter_auto    = gtk_radio_button_new_with_mnemonic (NULL, _("Use _automatic filtering based on plugins"));
+    GtkWidget *radio_filter_custom  = gtk_radio_button_new_with_mnemonic (NULL, _("Use _custom list of filetypes"));
+    GtkWidget *lbl_filter           = gtk_label_new (_("Allowed file types:  "));
+    GtkWidget *entry_filter         = gtk_entry_new ();
+
+    GtkWidget *frame_bookmarks      = gtk_frame_new (_(" Bookmarks  "));
+    GtkWidget *grid_bookmarks       = gtk_grid_new ();
+    GtkWidget *check_show_bookmarks = gtk_check_button_new_with_mnemonic (_("Show GTK _bookmarks"));
+    GtkWidget *lbl_bookmarks_file   = gtk_label_new (_("Custom bookmarks file:  "));
+    GtkWidget *entry_bookmarks_file = gtk_entry_new ();
+
+    GtkWidget *frame_icons          = gtk_frame_new (_(" Folder icons  "));
+    GtkWidget *grid_icons           = gtk_grid_new ();
+    GtkWidget *check_show_icons     = gtk_check_button_new_with_mnemonic (_("Show folder/coverart _icons"));
+    GtkWidget *lbl_icon_size        = gtk_label_new (_("Icon size:  "));
+    GtkWidget *spin_icon_size       = gtk_spin_button_new_with_range (16, 48, 2);
+
+    GtkWidget *frame_coverart       = gtk_frame_new (_(" Coverart  "));
+    GtkWidget *grid_coverart        = gtk_grid_new ();
+    GtkWidget *lbl_coverart         = gtk_label_new (_("Coverart images:  "));
+    GtkWidget *entry_coverart       = gtk_entry_new ();
+    GtkWidget *lbl_coverart_size    = gtk_label_new (_("Coverart size:  "));
+    GtkWidget *spin_coverart_size   = gtk_spin_button_new_with_range (16, 48, 2);
+
+    GtkWidget *frame_tree            = gtk_frame_new (_(" Tree view  "));
+    GtkWidget *grid_tree             = gtk_grid_new ();
+    GtkWidget *check_sort_tree       = gtk_check_button_new_with_mnemonic (_("Sort tree by _name"));
+    GtkWidget *check_show_treelines  = gtk_check_button_new_with_mnemonic (_("Show tree_lines"));
+
+    GtkWidget *frame_colors          = gtk_frame_new (_(" Font & Colors  "));
+    GtkWidget *grid_colors           = gtk_grid_new ();
+    GtkWidget *lbl_font_size         = gtk_label_new (_("Font size:  "));
+    GtkWidget *spin_font_size        = gtk_spin_button_new_with_range (6, 24, 1);
+    GtkWidget *lbl_color_bg          = gtk_label_new (_("Background color (normal):  "));
+    GtkWidget *button_color_bg       = gtk_color_button_new ();
+    GtkWidget *lbl_color_fg          = gtk_label_new (_("Foreground color (normal):  "));
+    GtkWidget *button_color_fg       = gtk_color_button_new ();
+    GtkWidget *lbl_color_bg_sel      = gtk_label_new (_("Background color (selected):  "));
+    GtkWidget *button_color_bg_sel   = gtk_color_button_new ();
+    GtkWidget *lbl_color_fg_sel      = gtk_label_new (_("Foreground color (selected):  "));
+    GtkWidget *button_color_fg_sel   = gtk_color_button_new ();
+
+    gtk_container_set_border_width (GTK_CONTAINER (page1), 8);
+    gtk_container_set_border_width (GTK_CONTAINER (page2), 8);
+    gtk_container_set_border_width (GTK_CONTAINER (page3), 8);
+    gtk_container_set_border_width (GTK_CONTAINER (page4), 8);
+    gtk_container_set_border_width (GTK_CONTAINER (page5), 8);
+
+    gtk_container_set_border_width (GTK_CONTAINER (grid_plugin),    8);
+    gtk_container_set_border_width (GTK_CONTAINER (grid_layout),    8);
+    gtk_container_set_border_width (GTK_CONTAINER (grid_paths),     8);
+    gtk_container_set_border_width (GTK_CONTAINER (grid_search),    8);
+    gtk_container_set_border_width (GTK_CONTAINER (grid_filter),    8);
+    gtk_container_set_border_width (GTK_CONTAINER (grid_bookmarks), 8);
+    gtk_container_set_border_width (GTK_CONTAINER (grid_icons),     8);
+    gtk_container_set_border_width (GTK_CONTAINER (grid_coverart),  8);
+    gtk_container_set_border_width (GTK_CONTAINER (grid_tree),      8);
+    gtk_container_set_border_width (GTK_CONTAINER (grid_colors),    8);
+
+    gtk_grid_set_row_spacing (GTK_GRID (grid_plugin),    2);
+    gtk_grid_set_row_spacing (GTK_GRID (grid_layout),    2);
+    gtk_grid_set_row_spacing (GTK_GRID (grid_paths),     0);
+    gtk_grid_set_row_spacing (GTK_GRID (grid_search),    2);
+    gtk_grid_set_row_spacing (GTK_GRID (grid_filter),    2);
+    gtk_grid_set_row_spacing (GTK_GRID (grid_bookmarks), 2);
+    gtk_grid_set_row_spacing (GTK_GRID (grid_icons),     2);
+    gtk_grid_set_row_spacing (GTK_GRID (grid_coverart),  2);
+    gtk_grid_set_row_spacing (GTK_GRID (grid_tree),      2);
+    gtk_grid_set_row_spacing (GTK_GRID (grid_colors),    2);
+
+    gtk_widget_set_size_request (lbl_search_delay,      300,    -1);
+    gtk_widget_set_size_request (lbl_fullsearch_wait,   300,    -1);
+    gtk_widget_set_size_request (lbl_filter,            200-48, -1);
+    gtk_widget_set_size_request (lbl_bookmarks_file,    200,    -1);
+    gtk_widget_set_size_request (lbl_icon_size,         200,    -1);
+    gtk_widget_set_size_request (lbl_coverart,          200,    -1);
+    gtk_widget_set_size_request (lbl_coverart_size,     200,    -1);
+    gtk_widget_set_size_request (lbl_font_size,         200,    -1);
+    gtk_widget_set_size_request (lbl_color_bg,          200,    -1);
+    gtk_widget_set_size_request (lbl_color_fg,          200,    -1);
+    gtk_widget_set_size_request (lbl_color_bg_sel,      200,    -1);
+    gtk_widget_set_size_request (lbl_color_fg_sel,      200,    -1);
+
+    gtk_widget_set_size_request (spin_icon_size,         50,    -1);
+    gtk_widget_set_size_request (spin_coverart_size,     50,    -1);
+    gtk_widget_set_size_request (spin_font_size,         50,    -1);
+    gtk_widget_set_size_request (button_color_bg,        50,    -1);
+    gtk_widget_set_size_request (button_color_fg,        50,    -1);
+    gtk_widget_set_size_request (button_color_bg_sel,    50,    -1);
+    gtk_widget_set_size_request (button_color_fg_sel,    50,    -1);
+
+    gtk_label_set_xalign (GTK_LABEL (lbl_search_delay),     0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_fullsearch_wait),  0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_filter),           0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_bookmarks_file),   0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_icon_size),        0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_coverart),         0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_coverart_size),    0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_font_size),        0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_color_bg),         0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_color_fg),         0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_color_bg_sel),     0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_color_fg_sel),     0.);
+
+
+    gtk_radio_button_join_group (GTK_RADIO_BUTTON (radio_filter_custom), GTK_RADIO_BUTTON (radio_filter_auto));
+
+    g_signal_connect (radio_filter_custom, "toggled", G_CALLBACK (on_settings_radio_filter_toggled), entry_filter);
+
+
+    // page 1
+
+    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page1, NULL);
+    gtk_notebook_set_tab_label_text (GTK_NOTEBOOK (notebook), page1, _("Plugin"));
+
+    gtk_container_add (GTK_CONTAINER (frame_plugin), grid_plugin);
+    gtk_box_pack_start (GTK_BOX (page1), frame_plugin, FALSE, TRUE, 0);
+
+    // CONFIG_ENABLED
+    gtk_grid_attach (GTK_GRID (grid_plugin), check_enabled, 0, 0, 2, 1);
+
+    // CONFIG_SAVE_TREEVIEW
+    gtk_grid_attach (GTK_GRID (grid_plugin), check_save_view, 0, 1, 2, 1);
+
+    gtk_container_add (GTK_CONTAINER (frame_layout), grid_layout);
+    gtk_box_pack_start (GTK_BOX (page1), frame_layout, FALSE, TRUE, 0);
+
+    // CONFIG_HIDDEN
+    gtk_grid_attach (GTK_GRID (grid_layout), check_hidden, 0, 0, 2, 1);
+
+    // CONFIG_HIDE_NAVIGATION
+    gtk_grid_attach (GTK_GRID (grid_layout), check_hide_nav, 0, 1, 2, 1);
+
+    // CONFIG_HIDE_SEARCH
+    gtk_grid_attach (GTK_GRID (grid_layout), check_hide_search, 0, 2, 2, 1);
+
+    // CONFIG_HIDE_TOOLBAR
+    gtk_grid_attach (GTK_GRID (grid_layout), check_hide_tools, 0, 3, 2, 1);
+
+
+    // page 2
+
+    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page2, NULL);
+    gtk_notebook_set_tab_label_text (GTK_NOTEBOOK (notebook), page2, _("Directories"));
+
+    gtk_container_add (GTK_CONTAINER (frame_paths), grid_paths);
+    gtk_box_pack_start (GTK_BOX (page2), frame_paths, FALSE, TRUE, 0);
+
+    // CONFIG_DEFAULT_PATH
+
+
+    // page 3
+
+    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page3, NULL);
+    gtk_notebook_set_tab_label_text (GTK_NOTEBOOK (notebook), page3, _("Filtering"));
+
+    gtk_container_add (GTK_CONTAINER (frame_filter), grid_filter);
+    gtk_box_pack_start (GTK_BOX (page3), frame_filter, FALSE, TRUE, 0);
+
+    // CONFIG_SHOW_HIDDEN_FILES
+    gtk_grid_attach (GTK_GRID (grid_filter), check_show_hidden, 0, 0, 2, 1);
+
+    // CONFIG_FILTER_ENABLED
+    gtk_grid_attach (GTK_GRID (grid_filter), check_filter_enabled, 0, 1, 2, 1);
+
+    // CONFIG_FILTER_AUTO
+    gtk_grid_attach (GTK_GRID (grid_filter), radio_filter_auto, 0, 2, 2, 1);
+    gtk_widget_set_margin_start (radio_filter_auto, 16);
+
+    // CONFIG_FILTER
+    gtk_grid_attach (GTK_GRID (grid_filter), radio_filter_custom, 0, 3, 2, 1);
+    gtk_grid_attach (GTK_GRID (grid_filter), lbl_filter, 0, 4, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_filter), entry_filter, 1, 4, 1, 1);
+    gtk_widget_set_margin_start (radio_filter_custom, 16);
+    gtk_widget_set_margin_start (lbl_filter, 40);
+    gtk_widget_set_hexpand (entry_filter, TRUE);
+
+    gtk_container_add (GTK_CONTAINER (frame_search), grid_search);
+    gtk_box_pack_start (GTK_BOX (page3), frame_search, FALSE, TRUE, 0);
+
+    // CONFIG_SEARCH_DELAY
+    gtk_grid_attach (GTK_GRID (grid_search), lbl_search_delay, 0, 0, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_search), spin_search_delay, 1, 0, 1, 1);
+
+    // CONFIG_FULLSEARCH_WAIT
+    gtk_grid_attach (GTK_GRID (grid_search), lbl_fullsearch_wait, 0, 1, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_search), spin_fullsearch_wait, 1, 1, 1, 1);
+
+
+    // page 4
+
+    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page4, NULL);
+    gtk_notebook_set_tab_label_text (GTK_NOTEBOOK (notebook), page4, _("Content"));
+
+    gtk_container_add (GTK_CONTAINER (frame_bookmarks), grid_bookmarks);
+    gtk_box_pack_start (GTK_BOX (page4), frame_bookmarks, FALSE, TRUE, 0);
+
+    // CONFIG_SHOW_BOOKMARKS
+    gtk_grid_attach (GTK_GRID (grid_bookmarks), check_show_bookmarks, 0, 0, 2, 1);
+
+    // CONFIG_BOOKMARKS_FILE
+    gtk_grid_attach (GTK_GRID (grid_bookmarks), lbl_bookmarks_file, 0, 1, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_bookmarks), entry_bookmarks_file, 1, 1, 1, 1);
+    gtk_widget_set_hexpand (entry_bookmarks_file, TRUE);
+
+    gtk_container_add (GTK_CONTAINER (frame_icons), grid_icons);
+    gtk_box_pack_start (GTK_BOX (page4), frame_icons, FALSE, TRUE, 0);
+
+    // CONFIG_SHOW_ICONS
+    gtk_grid_attach (GTK_GRID (grid_icons), check_show_icons, 0, 0, 2, 1);
+
+    // CONFIG_ICON_SIZE
+    gtk_grid_attach (GTK_GRID (grid_icons), lbl_icon_size, 0, 1, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_icons), spin_icon_size, 1, 1, 1, 1);
+
+    gtk_container_add (GTK_CONTAINER (frame_coverart), grid_coverart);
+    gtk_box_pack_start (GTK_BOX (page4), frame_coverart, FALSE, TRUE, 0);
+
+    // CONFIG_COVERART
+    gtk_grid_attach (GTK_GRID (grid_coverart), lbl_coverart, 0, 0, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_coverart), entry_coverart, 1, 0, 1, 1);
+    gtk_widget_set_hexpand (entry_coverart, TRUE);
+
+    // CONFIG_COVERART_SIZE
+    gtk_grid_attach (GTK_GRID (grid_coverart), lbl_coverart_size, 0, 1, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_coverart), spin_coverart_size, 1, 1, 1, 1);
+
+
+    // page 5
+
+    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page5, NULL);
+    gtk_notebook_set_tab_label_text (GTK_NOTEBOOK (notebook), page5, _("Look & Feel"));
+
+    gtk_container_add (GTK_CONTAINER (frame_tree), grid_tree);
+    gtk_box_pack_start (GTK_BOX (page5), frame_tree, FALSE, TRUE, 0);
+
+    // CONFIG_SORT_TREEVIEW
+    gtk_grid_attach (GTK_GRID (grid_tree), check_sort_tree, 0, 0, 2, 1);
+
+    // CONFIG_SHOW_TREE_LINES
+    gtk_grid_attach (GTK_GRID (grid_tree), check_show_treelines, 0, 1, 2, 1);
+
+    gtk_container_add (GTK_CONTAINER (frame_colors), grid_colors);
+    gtk_box_pack_start (GTK_BOX (page5), frame_colors, FALSE, TRUE, 0);
+
+    // CONFIG_FONT_SIZE
+    gtk_grid_attach (GTK_GRID (grid_colors), lbl_font_size, 0, 0, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_colors), spin_font_size, 1, 0, 1, 1);
+
+    gtk_grid_attach (GTK_GRID (grid_colors), lbl_color_bg, 0, 1, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_colors), button_color_bg, 1, 1, 1, 1);
+
+    gtk_grid_attach (GTK_GRID (grid_colors), lbl_color_fg, 0, 2, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_colors), button_color_fg, 1, 2, 1, 1);
+
+    gtk_grid_attach (GTK_GRID (grid_colors), lbl_color_bg_sel, 0, 3, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_colors), button_color_bg_sel, 1, 3, 1, 1);
+
+    gtk_grid_attach (GTK_GRID (grid_colors), lbl_color_fg_sel, 0, 4, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_colors), button_color_fg_sel, 1, 4, 1, 1);
+
+
+    // notebook
+
+    gtk_box_pack_start (GTK_BOX (content), notebook, TRUE, TRUE, 0);
+
+    gtk_widget_show_all (settings);
+
+
+    int response;
+    do
+    {
+        GdkRGBA color;
+
+        trace("update dialog\n");
+
+        // update all widgets
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_enabled), CONFIG_ENABLED);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_save_view), CONFIG_SAVE_TREEVIEW);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_hidden), CONFIG_HIDDEN);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_hide_nav), CONFIG_HIDE_NAVIGATION);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_hide_search), CONFIG_HIDE_SEARCH);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_hide_tools), CONFIG_HIDE_TOOLBAR);
+
+        settings_update_paths (GTK_GRID (grid_paths), g_strdup (CONFIG_DEFAULT_PATH));
+
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_show_hidden), CONFIG_SHOW_HIDDEN_FILES);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_filter_enabled), CONFIG_FILTER_ENABLED);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (radio_filter_auto), CONFIG_FILTER_AUTO);
+        gtk_entry_set_text (GTK_ENTRY (entry_filter), CONFIG_FILTER);
+        gtk_widget_set_sensitive (GTK_WIDGET (entry_filter), !CONFIG_FILTER_AUTO);
+        gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_search_delay), CONFIG_SEARCH_DELAY);
+        gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_fullsearch_wait), CONFIG_FULLSEARCH_WAIT);
+
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_show_bookmarks), CONFIG_SHOW_BOOKMARKS);
+        gtk_entry_set_text (GTK_ENTRY (entry_bookmarks_file), CONFIG_BOOKMARKS_FILE);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_show_icons), CONFIG_SHOW_ICONS);
+        gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_icon_size), CONFIG_ICON_SIZE);
+        gtk_entry_set_text (GTK_ENTRY (entry_coverart), CONFIG_COVERART);
+        gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_coverart_size), CONFIG_COVERART_SIZE);
+
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_sort_tree), CONFIG_SORT_TREEVIEW);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_show_treelines), CONFIG_SHOW_TREE_LINES);
+        gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_font_size), CONFIG_FONT_SIZE);
+        if (gdk_rgba_parse (&color, CONFIG_COLOR_BG))
+            gtk_color_chooser_set_rgba (GTK_COLOR_CHOOSER (button_color_bg), &color);
+        if (gdk_rgba_parse (&color, CONFIG_COLOR_FG))
+            gtk_color_chooser_set_rgba (GTK_COLOR_CHOOSER (button_color_fg), &color);
+        if (gdk_rgba_parse (&color, CONFIG_COLOR_BG_SEL))
+            gtk_color_chooser_set_rgba (GTK_COLOR_CHOOSER (button_color_bg_sel), &color);
+        if (gdk_rgba_parse (&color, CONFIG_COLOR_FG_SEL))
+            gtk_color_chooser_set_rgba (GTK_COLOR_CHOOSER (button_color_fg_sel), &color);
+
+        response = gtk_dialog_run (GTK_DIALOG (settings));
+        if (response == GTK_RESPONSE_CANCEL)
+            break;
+
+        trace("read settings, response=%d\n", response);
+
+        // read out settings
+        g_free ((gchar*) CONFIG_DEFAULT_PATH);
+        g_free ((gchar*) CONFIG_FILTER);
+        g_free ((gchar*) CONFIG_COVERART);
+        g_free ((gchar*) CONFIG_BOOKMARKS_FILE);
+        g_free ((gchar*) CONFIG_COLOR_BG);
+        g_free ((gchar*) CONFIG_COLOR_FG);
+        g_free ((gchar*) CONFIG_COLOR_BG_SEL);
+        g_free ((gchar*) CONFIG_COLOR_FG_SEL);
+
+        deadbeef->conf_lock ();
+
+        CONFIG_ENABLED              = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_enabled));
+        CONFIG_SAVE_TREEVIEW        = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_save_view));
+        CONFIG_HIDDEN               = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_hidden));
+        CONFIG_HIDE_NAVIGATION      = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_hide_nav));
+        CONFIG_HIDE_SEARCH          = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_hide_search));
+        CONFIG_HIDE_TOOLBAR         = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_hide_tools));
+
+        CONFIG_DEFAULT_PATH         = settings_get_paths (GTK_GRID (grid_paths));
+        trace("defpath: %s\n",CONFIG_DEFAULT_PATH);
+
+        CONFIG_SHOW_HIDDEN_FILES    = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_show_hidden));
+        CONFIG_FILTER_ENABLED       = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_filter_enabled));
+        CONFIG_FILTER_AUTO          = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (radio_filter_auto));
+        CONFIG_FILTER               = g_strdup (gtk_entry_get_text (GTK_ENTRY (entry_filter)));
+        CONFIG_SEARCH_DELAY         = gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_search_delay));
+        CONFIG_FULLSEARCH_WAIT      = gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_fullsearch_wait));
+
+        CONFIG_SHOW_BOOKMARKS       = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_show_bookmarks));
+        CONFIG_BOOKMARKS_FILE       = g_strdup (gtk_entry_get_text (GTK_ENTRY (entry_bookmarks_file)));
+        CONFIG_SHOW_ICONS           = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_show_icons));
+        CONFIG_ICON_SIZE            = gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_icon_size));
+        CONFIG_COVERART             = g_strdup (gtk_entry_get_text (GTK_ENTRY (entry_coverart)));
+        CONFIG_COVERART_SIZE        = gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_coverart_size));
+
+        CONFIG_SORT_TREEVIEW        = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_sort_tree));
+        CONFIG_SHOW_TREE_LINES      = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_show_treelines));
+        CONFIG_FONT_SIZE            = gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_font_size));
+        CONFIG_COLOR_BG             = gtk_color_chooser_get_hex (GTK_COLOR_CHOOSER (button_color_bg));
+        CONFIG_COLOR_FG             = gtk_color_chooser_get_hex (GTK_COLOR_CHOOSER (button_color_fg));
+        CONFIG_COLOR_BG_SEL         = gtk_color_chooser_get_hex (GTK_COLOR_CHOOSER (button_color_bg_sel));
+        CONFIG_COLOR_FG_SEL         = gtk_color_chooser_get_hex (GTK_COLOR_CHOOSER (button_color_fg_sel));
+
+        deadbeef->conf_unlock ();
+
+        save_config ();
+        update_rootdirs ();
+        deadbeef->sendmessage (DB_EV_CONFIGCHANGED, 0, 0, 0);
+    }
+    while (response == GTK_RESPONSE_APPLY);
+
+    gtk_widget_destroy (settings);
+    return;
+}
+#endif
 
 
 /*----------------------------*/
@@ -1443,13 +2034,7 @@ static gchar *
 get_default_dir (void)
 {
     const gchar *path = gtk_entry_get_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN (addressbar))));
-/*
-#if !GTK_CHECK_VERSION(3,0,0)
-    const gchar *path = gtk_combo_box_get_active_text (GTK_COMBO_BOX (addressbar));
-#else
-    const gchar *path = gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (addressbar));
-#endif
-*/
+
     if (g_file_test (path, G_FILE_TEST_EXISTS))
         return g_strdup (path);
 
@@ -2175,6 +2760,14 @@ on_menu_hide_toolbar (GtkMenuItem *menuitem, gpointer *user_data)
         gtk_widget_show (sidebar_toolbar);
 }
 
+#if GTK_CHECK_VERSION(3,6,0)
+static void
+on_menu_config (GtkMenuItem *menuitem, gpointer user_data)
+{
+    create_settings_dialog ();
+}
+#endif
+
 
 /*----------------*/
 /* TOOLBAR EVENTS */
@@ -2337,10 +2930,6 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
     GtkTreeViewColumn   *column;
     gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (treeview), event->x, event->y,
                     &path, &column, NULL, NULL);
-
-    {
-        trace("expand!\n");
-    }
 
     mouseclick_lastpos[0] = event->x;
     mouseclick_lastpos[1] = event->y;
@@ -2895,18 +3484,19 @@ static DB_misc_t plugin =
         "Issue tracker: https://gitlab.com/zykure/deadbeef-fb/issues\n"
         "\n"
         "BOOKMARKS:\n"
-        "If you don't want to use GTK bookmarks, you can create your own bookmarks file\n"
-        "to be used only by the filebrowser (default file: ~/.config/deadbeef/bookmarks).\n"
+        "If you don't want to use GTK bookmarks, you can create your own\n"
+        "bookmarks file to be used only by the filebrowser\n"
+        "(default file: ~/.config/deadbeef/bookmarks).\n"
         "\n"
         "SEARCH BEHAVIOR:\n"
         "By default, the search bar filters the items visible in the tree by their full\n"
-        "path. When a search text is entered, only those items that contain the text in\n"
-        "path are shown. When the search is cleared, all items are shown again.\n"
-        "The tree is expanded fully after some number of characters have been entered\n"
-        "into the search bar. Then the filebrowser will traverse the full directory\n"
-        "tree and check every file inside it. Note that this can take a long yime on\n"
-        "large trees. The number of characters to trigger this behavior can be adjusted\n"
-        "in the options (default is 5 characters).\n"
+        "path. When a search text is entered, only those items that contain the text\n"
+        "in their path are shown. When the search is cleared, all items are shown\n"
+        "again. The tree is expanded fully after some number of characters have\n"
+        "been entered into the search bar. Then the filebrowser will traverse the\n"
+        "full directory tree and check every file inside it. Note that this can take\n"
+        "a long time on large trees. The number of characters to trigger this behavior\n"
+        "can be adjusted in the options (default is 5 characters).\n"
         "\n"
         "COVERART ICONS:\n"
         "Each directory that is shown in the tree is searched for a coverart image\n"

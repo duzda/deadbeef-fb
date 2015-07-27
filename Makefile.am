@@ -2,7 +2,7 @@ release: all
 	./makerelease.sh
 
 #SUBDIRS = \
-#	intl\
+#	intl \
 #	po
 
 #INTLTOOL_FILES = \

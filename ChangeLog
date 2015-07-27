@@ -1,3 +1,118 @@
+commit 39d76ab016c6b3c4dd4487235b18e15b00b5cd37
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Jul 25 18:34:22 2015 +0200
+
+    Update README
+
+commit daa9f6fdb9df8209f0d5b47944dbee33a13402c1
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Jul 25 18:28:14 2015 +0200
+
+    Update makerelease.sh for using Gitlab (file upload on SF.net still broken?)
+
+commit c041848685bf794d9cf302f0923b73e26a49b7dc
+Author: Jan Behrens <zykure@web.de>
+Date:   Sat Jul 25 18:07:50 2015 +0200
+
+    Split up icon/name columns to get back the restore/expand feature - fixes #5
+
+commit f3c23e19cd375c320cbbe2d3993d913a88c24523
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Jul 23 21:36:43 2015 +0200
+
+    Add another option to hide the toolbar (now all 3 bars can be hidden separately)
+
+commit b126167cec002133e9231d29bd57c2ac9a844993
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Jul 23 21:21:46 2015 +0200
+
+    Add another option to hide only the searchbar, fix issue with setting not applied on startup
+
+commit b15379ef26c8a20eb8e1ab9637673228dfea17fe
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Jul 23 20:41:03 2015 +0200
+
+    fix loading bookmarks twice, use correct bookmarks file on GTK 2/3, add extra bookmarks file option
+
+commit e5f651db53657820be82e565d2d9592559306735
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Jul 23 20:15:38 2015 +0200
+
+    Fix bookmark toggle (fixes #8), add "replace playlist" feature, remove "goto root" button, clean up code
+
+commit 126191a21aac9328028d289954b72a2eddad09ef
+Author: Jan Behrens <zykure@web.de>
+Date:   Thu Jul 23 11:40:23 2015 +0200
+
+    Code restructure, add option to hide navigation area
+
+commit fd06c82f254126a4094ecaccd9bf524cf94edde3
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Jul 22 21:50:12 2015 +0200
+
+    Fix the FIXMEs
+
+commit 23d8e7f5ac560d57cf0f47bff66c2835c5236fab
+Merge: 6c3acd5 4e4f933
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Jul 22 21:49:02 2015 +0200
+
+    Merge branch 'ximm/deadbeef-fb-gardening'
+
+commit 4e4f93322785ed3ca50e6463f356d7e108999ed5
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Wed Jul 22 10:47:40 2015 +0200
+
+    Fix some more whitespace
+
+commit c0802b51066ad15352390707efd20884d643e46d
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Wed Jul 22 10:39:42 2015 +0200
+
+    normalize comments
+
+commit d449c393816dbae24b93fc988c1b462617f453fe
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Wed Jul 22 10:29:48 2015 +0200
+
+    Fix some indents
+
+commit d282cca7658c2961662743edbee9f53a019ac3c1
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Wed Jul 22 10:16:25 2015 +0200
+
+    Fix spaces around parantheses
+
+commit 4ab5665f0a9302664b89336f70484a6aba493f69
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Wed Jul 22 10:09:50 2015 +0200
+
+    Gardening: Fix opening braces
+
+commit 6c3acd50ee1775449b17c53e5667dd3add21f10f
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Jul 21 21:06:01 2015 +0200
+
+    fix searchbar: expand full tree after typing N chars, restore expanded rows from config
+
+commit c76b75bb564540d5e149f9c4ddc69472883586ae
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Jul 20 14:03:44 2015 +0200
+
+    More AUR fixes
+
+commit d2e021202b0a9bd33029264828d299192515f5d6
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Jul 20 13:37:39 2015 +0200
+
+    Fix minor AUR build issues
+
+commit 942fe918ef3e13f8b29e87656962158fea9e17fa
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Jul 20 13:29:20 2015 +0200
+
+    Fix AUR build
+
 commit 6d101eef4c91516e0fa2b682884eec12c6dd80ab
 Author: Jan Behrens <zykure@web.de>
 Date:   Mon Jul 20 13:09:31 2015 +0200
