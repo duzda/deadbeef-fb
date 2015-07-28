@@ -27,7 +27,25 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-
+/*
+ * TODO: Add tooltips in settings dialog
+ *
+ * TODO: Add more config options
+ *
+ *   Content:
+ *      CONFIG_SHOW_BOOKMARKS       -> Show/hide all bookmarks
+ *      CONFIG_SHOW_BOOKMARKS_GTK   -> Enable/disable showing GTK bookmarks
+ *      CONFIG_SHOW_BOOKMARKS_FILE  -> Enable/disable showing user bookmarks
+ *
+ *      Merge icon & coverart sections
+ *      CONFIG_SHOW_ICONS           -> Show/hide all icons
+ *      CONFIG_SHOW_COVERART        -> Enable/disable showing coverart icons
+ *
+ *   Look & Feel:
+ *      CONFIG_EXPAND_1CLICK        -> Expand tree items by single-click on expander
+ *      CONFIG_EXPAND_2CLICK        -> Expand tree items by double-click on row
+ *
+ */
 #define PLUGIN_VERSION_MAJOR    0
 #define PLUGIN_VERSION_MINOR    85
 
@@ -1199,7 +1217,7 @@ create_sidebar (void)
         gtk_widget_hide (sidebar_toolbar);
 }
 
-#if GTK_CHECK_VERSION(3,6,0)
+#if GTK_CHECK_VERSION(3,16,0)
 static void settings_update_paths (GtkGrid *grid, gchar *config_paths);
 static gchar* settings_get_paths(GtkGrid *grid);
 
@@ -1395,7 +1413,7 @@ create_settings_dialog ()
 
     GtkWidget *frame_filter         = gtk_frame_new (_(" Shown files  "));
     GtkWidget *grid_filter          = gtk_grid_new ();
-    GtkWidget *check_show_hidden    = gtk_check_button_new_with_mnemonic (_("Show _hiden files"));
+    GtkWidget *check_show_hidden    = gtk_check_button_new_with_mnemonic (_("Show _hidden files"));
     GtkWidget *check_filter_enabled = gtk_check_button_new_with_mnemonic (_("_Filter files by extension"));
     GtkWidget *radio_filter_auto    = gtk_radio_button_new_with_mnemonic (NULL, _("Use _automatic filtering based on plugins"));
     GtkWidget *radio_filter_custom  = gtk_radio_button_new_with_mnemonic (NULL, _("Use _custom list of filetypes"));
@@ -1773,7 +1791,7 @@ create_settings_dialog ()
     gtk_widget_destroy (settings);
     return;
 }
-#endif
+#endif  // GTK_CHECK_VERSION
 
 
 /*----------------------------*/
