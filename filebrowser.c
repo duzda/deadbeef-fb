@@ -996,7 +996,7 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), CONFIG_HIDE_TOOLBAR);
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_hide_toolbar), NULL);
 
-#if GTK_CHECK_VERSION(3,6,0)
+#if GTK_CHECK_VERSION(3,16,0)
     // new settings dialog
     item = gtk_separator_menu_item_new ();
     gtk_container_add (GTK_CONTAINER (menu), item);
@@ -2764,7 +2764,7 @@ on_menu_hide_toolbar (GtkMenuItem *menuitem, gpointer *user_data)
         gtk_widget_show (sidebar_toolbar);
 }
 
-#if GTK_CHECK_VERSION(3,6,0)
+#if GTK_CHECK_VERSION(3,16,0)
 static void
 on_menu_config (GtkMenuItem *menuitem, gpointer user_data)
 {
