@@ -2094,7 +2094,7 @@ get_icon_from_cache (const gchar *uri, const gchar *coverart, gint imgsize)
             trace ("creating new icon for %s\n", uri);
 
             GError *err = NULL;
-            icon = gdk_pixbuf_new_from_file_at_size (iconfile, imgsize, imgsize, NULL);
+            icon = gdk_pixbuf_new_from_file_at_scale (iconfile, -1, imgsize, TRUE, NULL);  // do not constrain width
             if (! gdk_pixbuf_save (icon, cachefile, "png", &err, NULL))
             {
                 fprintf (stderr, "Could not cache coverart image %s: %s\n", iconfile, err->message);
