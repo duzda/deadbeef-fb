@@ -42,6 +42,7 @@
 #define     CONFSTR_FB_WIDTH                "filebrowser.sidebar_width"
 #define     CONFSTR_FB_COVERART             "filebrowser.coverart_files"
 #define     CONFSTR_FB_COVERART_SIZE        "filebrowser.coverart_size"
+#define     CONFSTR_FB_COVERART_SCALE       "filebrowser.coverart_scale"
 #define     CONFSTR_FB_SAVE_TREEVIEW        "filebrowser.save_treeview"
 #define     CONFSTR_FB_EXPANDED_ROWS        "filebrowser.expanded_rows"
 #define     CONFSTR_FB_COLOR_BG             "filebrowser.bgcolor"
@@ -98,7 +99,7 @@ static void         save_config_expanded_rows (void);
 static void         load_config (void);
 static void         load_config_expanded_rows (void);
 static gchar *      get_default_dir (void);
-static GdkPixbuf *  get_icon_from_cache (const gchar *uri, const gchar *coverart, gint imgsize);
+static GdkPixbuf *  get_icon_from_cache (const gchar *uri, const gchar *coverart);
 static GdkPixbuf *  get_icon_for_uri (gchar *uri);
 static void         get_uris_from_selection (gpointer data, gpointer userdata);
 static void         update_rootdirs (void);

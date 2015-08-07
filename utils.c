@@ -165,7 +165,7 @@ utils_tooltip_from_uri (const gchar *uri)
 
 /* Get cache path for directory icon of URI */
 gchar *
-utils_make_cache_path (const gchar *uri, gint imgsize)
+utils_make_cache_path (const gchar *uri, gint imgsize, gboolean scale)
 {
     /* Path for cached icon is constructed like this:
      *     $XDG_CACHE_HOME/deadbeef-fb/icons/<imgsize>/<uri-without-separators>.png
@@ -182,9 +182,10 @@ utils_make_cache_path (const gchar *uri, gint imgsize)
 
     path = g_string_sized_new (256);  // reasonable initial size
     g_string_printf (path,
-                    cache ? "%s/deadbeef-fb/icons/%d/" : "%s/.cache/deadbeef-fb/icons/%d/",
+                    cache ? "%s/deadbeef-fb/icons/%d/%s/" : "%s/.cache/deadbeef-fb/icons/%d/%s/",
                     cache ? cache : g_getenv ("HOME"),
-                    imgsize);
+                    imgsize,
+                    scale ? "scaled" : "");
     cachedir = g_string_free (path, FALSE);
 
     /* Create path if it doesn't exist already */

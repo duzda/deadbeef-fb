@@ -98,6 +98,7 @@ static gboolean             CONFIG_SHOW_TREE_LINES      = FALSE;
 static gint                 CONFIG_WIDTH                = 220;
 static const gchar *        CONFIG_COVERART             = NULL;
 static gint                 CONFIG_COVERART_SIZE        = 24;
+static gboolean             CONFIG_COVERART_SCALE       = TRUE;
 static gboolean             CONFIG_SAVE_TREEVIEW        = TRUE;
 static const gchar *        CONFIG_COLOR_BG             = NULL;
 static const gchar *        CONFIG_COLOR_FG             = NULL;
@@ -225,6 +226,7 @@ save_config (void)
     deadbeef->conf_set_int (CONFSTR_FB_SHOW_TREE_LINES,     CONFIG_SHOW_TREE_LINES);
     deadbeef->conf_set_int (CONFSTR_FB_WIDTH,               CONFIG_WIDTH);
     deadbeef->conf_set_int (CONFSTR_FB_COVERART_SIZE,       CONFIG_COVERART_SIZE);
+    deadbeef->conf_set_int (CONFSTR_FB_COVERART_SCALE,      CONFIG_COVERART_SCALE);
     deadbeef->conf_set_int (CONFSTR_FB_SAVE_TREEVIEW,       CONFIG_SAVE_TREEVIEW);
     deadbeef->conf_set_int (CONFSTR_FB_ICON_SIZE,           CONFIG_ICON_SIZE);
     deadbeef->conf_set_int (CONFSTR_FB_FONT_SIZE,           CONFIG_FONT_SIZE);
@@ -313,6 +315,7 @@ load_config (void)
     CONFIG_SHOW_TREE_LINES      = deadbeef->conf_get_int (CONFSTR_FB_SHOW_TREE_LINES,     FALSE);
     CONFIG_WIDTH                = deadbeef->conf_get_int (CONFSTR_FB_WIDTH,               220);
     CONFIG_COVERART_SIZE        = deadbeef->conf_get_int (CONFSTR_FB_COVERART_SIZE,       24);
+    CONFIG_COVERART_SCALE       = deadbeef->conf_get_int (CONFSTR_FB_COVERART_SCALE,      TRUE);
     CONFIG_SAVE_TREEVIEW        = deadbeef->conf_get_int (CONFSTR_FB_SAVE_TREEVIEW,       TRUE);
     CONFIG_ICON_SIZE            = deadbeef->conf_get_int (CONFSTR_FB_ICON_SIZE,           24);
     CONFIG_FONT_SIZE            = deadbeef->conf_get_int (CONFSTR_FB_FONT_SIZE,           0);
@@ -353,7 +356,8 @@ load_config (void)
         "tree_lines:        %d \n"
         "width:             %d \n"
         "coverart:          %s \n"
-        "coverart size:     %d \n"
+        "coverart_size:     %d \n"
+        "coverart_scale:    %d \n"
         "save_treeview:     %d \n"
         "bgcolor:           %s \n"
         "fgcolor:           %s \n"
@@ -381,6 +385,7 @@ load_config (void)
         CONFIG_WIDTH,
         CONFIG_COVERART,
         CONFIG_COVERART_SIZE,
+        CONFIG_COVERART_SCALE,
         CONFIG_SAVE_TREEVIEW,
         CONFIG_COLOR_BG,
         CONFIG_COLOR_FG,
@@ -520,6 +525,7 @@ on_config_changed (uintptr_t ctx)
     gboolean    tree_lines      = CONFIG_SHOW_TREE_LINES;
     gint        width           = CONFIG_WIDTH;
     gint        coverart_size   = CONFIG_COVERART_SIZE;
+    gboolean    coverart_scale  = CONFIG_COVERART_SCALE;
     gint        icon_size       = CONFIG_ICON_SIZE;
     gboolean    sort_treeview   = CONFIG_SORT_TREEVIEW;
 
@@ -576,6 +582,7 @@ on_config_changed (uintptr_t ctx)
                 (show_icons != CONFIG_SHOW_ICONS) ||
                 (tree_lines != CONFIG_SHOW_TREE_LINES) ||
                 (show_icons && (coverart_size != CONFIG_COVERART_SIZE)) ||
+                (show_icons && (coverart_scale != CONFIG_COVERART_SCALE)) ||
                 (show_icons && (icon_size != CONFIG_ICON_SIZE)) ||
                 (sort_treeview != CONFIG_SORT_TREEVIEW))
             do_update = TRUE;
@@ -1370,6 +1377,8 @@ settings_update_paths (GtkGrid *grid, gchar *config_paths)
 static void
 create_settings_dialog ()
 {
+    save_config ();  // make sure current settings (e.g. changes via popup menu) are saved
+
     GtkWidget *settings = gtk_dialog_new_with_buttons (
             _("Filebrowser Plugin Settings"),
             GTK_WINDOW (gtkui_plugin->get_mainwin ()),
@@ -1438,6 +1447,7 @@ create_settings_dialog ()
     GtkWidget *entry_coverart       = gtk_entry_new ();
     GtkWidget *lbl_coverart_size    = gtk_label_new (_("Coverart size:  "));
     GtkWidget *spin_coverart_size   = gtk_spin_button_new_with_range (16, 48, 2);
+    GtkWidget *check_coverart_scale = gtk_check_button_new_with_mnemonic (_("_Scale coverart to fixed width (make icons square)"));
 
     GtkWidget *frame_tree            = gtk_frame_new (_(" Tree view  "));
     GtkWidget *grid_tree             = gtk_grid_new ();
@@ -1642,6 +1652,9 @@ create_settings_dialog ()
     gtk_grid_attach (GTK_GRID (grid_coverart), lbl_coverart_size, 0, 1, 1, 1);
     gtk_grid_attach (GTK_GRID (grid_coverart), spin_coverart_size, 1, 1, 1, 1);
 
+    // CONFIG_COVERART_SCALE
+    gtk_grid_attach (GTK_GRID (grid_coverart), check_coverart_scale, 0, 2, 2, 1);
+
 
     // page 5
 
@@ -1716,6 +1729,7 @@ create_settings_dialog ()
         gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_icon_size), CONFIG_ICON_SIZE);
         gtk_entry_set_text (GTK_ENTRY (entry_coverart), CONFIG_COVERART);
         gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_coverart_size), CONFIG_COVERART_SIZE);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_coverart_scale), CONFIG_COVERART_SCALE);
 
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_sort_tree), CONFIG_SORT_TREEVIEW);
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_show_treelines), CONFIG_SHOW_TREE_LINES);
@@ -1770,6 +1784,7 @@ create_settings_dialog ()
         CONFIG_ICON_SIZE            = gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_icon_size));
         CONFIG_COVERART             = g_strdup (gtk_entry_get_text (GTK_ENTRY (entry_coverart)));
         CONFIG_COVERART_SIZE        = gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_coverart_size));
+        CONFIG_COVERART_SCALE       = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_coverart_scale));
 
         CONFIG_SORT_TREEVIEW        = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_sort_tree));
         CONFIG_SHOW_TREE_LINES      = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_show_treelines));
@@ -2067,11 +2082,11 @@ get_default_dir (void)
 
 /* Try to get icon from cache, update cache if not found or original is newer */
 static GdkPixbuf *
-get_icon_from_cache (const gchar *uri, const gchar *coverart, gint imgsize)
+get_icon_from_cache (const gchar *uri, const gchar *coverart)
 {
     GdkPixbuf *icon = NULL;
     gchar *iconfile  = g_strconcat (uri, G_DIR_SEPARATOR_S, coverart, NULL);
-    gchar *cachefile = utils_make_cache_path (uri, imgsize);
+    gchar *cachefile = utils_make_cache_path (uri, CONFIG_COVERART_SIZE, CONFIG_COVERART_SCALE);
 
     if (g_file_test (iconfile, G_FILE_TEST_EXISTS))
     {
@@ -2093,8 +2108,30 @@ get_icon_from_cache (const gchar *uri, const gchar *coverart, gint imgsize)
         {
             trace ("creating new icon for %s\n", uri);
 
+            if (CONFIG_COVERART_SCALE)
+            {
+                // get image from file, scaling it to requested size
+                GdkPixbuf *coverart = NULL;
+                coverart = gdk_pixbuf_new_from_file_at_scale (iconfile, CONFIG_COVERART_SIZE, CONFIG_COVERART_SIZE, TRUE, NULL);
+
+                // create square icon and put the down-scaled image in it
+                int bps = gdk_pixbuf_get_bits_per_sample (coverart);
+                int w = gdk_pixbuf_get_width (coverart);
+                int h = gdk_pixbuf_get_height (coverart);
+                int x = (CONFIG_COVERART_SIZE - w) / 2;
+                int y = (CONFIG_COVERART_SIZE - h) / 2;
+
+                icon = gdk_pixbuf_new (GDK_COLORSPACE_RGB, TRUE, bps, CONFIG_COVERART_SIZE, CONFIG_COVERART_SIZE);  // add alpha channel
+                gdk_pixbuf_fill (icon, 0x00000000);  // make icon transparent
+                gdk_pixbuf_copy_area (coverart, 0, 0, w, h, icon, x, y);
+                g_object_unref (coverart);
+            }
+            else
+            {
+                icon = gdk_pixbuf_new_from_file_at_scale (iconfile, -1, CONFIG_COVERART_SIZE, TRUE, NULL);  // do not constrain width
+            }
+
             GError *err = NULL;
-            icon = gdk_pixbuf_new_from_file_at_scale (iconfile, -1, imgsize, TRUE, NULL);  // do not constrain width
             if (! gdk_pixbuf_save (icon, cachefile, "png", &err, NULL))
             {
                 fprintf (stderr, "Could not cache coverart image %s: %s\n", iconfile, err->message);
@@ -2116,22 +2153,39 @@ get_icon_for_uri (gchar *uri)
     if (! CONFIG_SHOW_ICONS)
         return NULL;
 
+    GdkPixbuf *icon = NULL;
+
     if (! g_file_test (uri, G_FILE_TEST_IS_DIR))
     {
-        // TODO: handle mimetypes
-        return utils_pixbuf_from_stock ("gtk-file", CONFIG_ICON_SIZE);
+        gchar *content_type;
+        gchar *icon_name;
+        GtkIconTheme *icon_theme;
+
+        content_type = g_content_type_guess (uri, NULL, 0, NULL);
+        icon_name    = g_content_type_get_generic_icon_name (content_type);
+        icon_theme   = gtk_icon_theme_get_default ();
+
+        icon = gtk_icon_theme_load_icon (icon_theme, icon_name, CONFIG_ICON_SIZE, GTK_ICON_LOOKUP_FORCE_SIZE, NULL);
+
+        g_free (content_type);
+        g_free (icon_name);
+
+        // Fallback to default icon
+        if (! icon)
+            icon = utils_pixbuf_from_stock ("gtk-file", CONFIG_ICON_SIZE);
+
+        return icon;
     }
 
     // Check for cover art in folder, otherwise use default icon
-    GdkPixbuf *icon = NULL;
     gchar **coverart = g_strsplit (CONFIG_COVERART, ";", 0);
     for (gint i = 0; coverart[i] && ! icon; i++)
-        icon = get_icon_from_cache (uri, coverart[i], CONFIG_COVERART_SIZE);
+        icon = get_icon_from_cache (uri, coverart[i]);
     g_strfreev (coverart);
 
     // Fallback to default icon
     if (! icon)
-        icon =  utils_pixbuf_from_stock ("folder", CONFIG_ICON_SIZE);
+        icon = utils_pixbuf_from_stock ("folder", CONFIG_ICON_SIZE);
 
     return icon;
 }
@@ -2861,7 +2915,7 @@ on_searchbar_timeout ()
         return FALSE;
 
     // avoid calling this function too often as it is quite expensive
-    gint64 now = g_get_real_time ();
+    gint64 now = g_get_monotonic_time ();
     if (now - last_searchbar_change < 1000*CONFIG_SEARCH_DELAY)  // time given in usec
         return TRUE;
     last_searchbar_change = 0;
@@ -2901,7 +2955,7 @@ static void
 on_searchbar_changed ()
 {
     if (last_searchbar_change == 0)
-        last_searchbar_change = g_get_real_time ();
+        last_searchbar_change = g_get_monotonic_time ();
 
     g_timeout_add (100, on_searchbar_timeout, NULL);
 }

@@ -23,7 +23,7 @@ GSList *        utils_get_file_list (const gchar *path, guint *length, gboolean 
 gchar *         utils_get_utf8_from_locale(const gchar *locale_text);
 void            utils_expand_home_dir (gchar *path);
 gchar *         utils_tooltip_from_uri (const gchar *uri);
-gchar *         utils_make_cache_path (const gchar *uri, gint imgsize);
+gchar *         utils_make_cache_path (const gchar *uri, gint imgsize, gboolean scale);
 gint            utils_check_dir (const gchar *dir, mode_t mode);
 void            utils_construct_style (GtkWidget *widget, const gchar *bgcolor, const gchar *fgcolor,
                 const gchar *bgcolor_sel, const gchar *fgcolor_sel);
