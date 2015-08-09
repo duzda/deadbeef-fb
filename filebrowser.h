@@ -141,6 +141,7 @@ static void         treebrowser_browse_dir (gpointer directory);
 static gboolean     treebrowser_browse (gchar *directory, gpointer parent);
 static void         treebrowser_bookmarks_set_state (void);
 static void         treebrowser_load_bookmarks (void);
+static void         treebrowser_clear_bookmarks (void);
 
 static void         on_mainmenu_toggle (GtkMenuItem *menuitem, gpointer *user_data);
 

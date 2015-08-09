@@ -28,8 +28,6 @@
 */
 
 /*
- * TODO: Add tooltips in settings dialog
- *
  * TODO: Add more config options
  *
  *   Content:
@@ -47,7 +45,7 @@
  *
  */
 #define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    85
+#define PLUGIN_VERSION_MINOR    86
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -172,6 +170,24 @@ gtkui_update_listview_headers (void)
             g_signal_emit_by_name (headers_menuitem, "activate");
         g_signal_emit_by_name (headers_menuitem, "activate");
     }
+}
+
+static gboolean
+bookmarks_foreach_func (GtkTreeModel *model, GtkTreePath  *path, GtkTreeIter *iter, GList **rowref_list)
+{
+    g_assert (rowref_list != NULL);
+
+    gboolean flag;
+    gtk_tree_model_get (model, iter, TREEBROWSER_COLUMN_FLAG, &flag, -1);
+
+    if (flag == TREEBROWSER_FLAGS_BOOKMARK)
+    {
+        GtkTreeRowReference  *rowref;
+        rowref = gtk_tree_row_reference_new (model, path);
+        *rowref_list = g_list_append (*rowref_list, rowref);
+    }
+
+    return FALSE; // do not stop walking the store, call us with next row
 }
 
 static void
@@ -1361,6 +1377,7 @@ settings_update_paths (GtkGrid *grid, gchar *config_paths)
         gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (button), "gtk-delete");
         gtk_grid_attach (grid, button, 1, row, 1, 1);
         g_signal_connect (button, "clicked", G_CALLBACK (on_settings_path_remove), label);
+        gtk_widget_set_tooltip_text (button, _("Remove this path from the list."));
     }
     g_strfreev (path_list);
 
@@ -1368,6 +1385,7 @@ settings_update_paths (GtkGrid *grid, gchar *config_paths)
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (button), "gtk-add");
     gtk_grid_attach (grid, button, 1, row+1, 1, 1);
     g_signal_connect (button, "clicked", G_CALLBACK (on_settings_path_add), grid);
+    gtk_widget_set_tooltip_text (button, _("Add another path to the list. Paths listed here will be added to the navigation/address bar drop-down list, and the first path in the list will be used on startup."));
 
     gtk_widget_show_all (GTK_WIDGET (grid));
 
@@ -1466,6 +1484,34 @@ create_settings_dialog ()
     GtkWidget *button_color_bg_sel   = gtk_color_button_new ();
     GtkWidget *lbl_color_fg_sel      = gtk_label_new (_("Foreground color (selected):  "));
     GtkWidget *button_color_fg_sel   = gtk_color_button_new ();
+
+    gtk_widget_set_tooltip_text (check_enabled,          _("If disabled, the plugin will not be added to the player's interface."));
+    gtk_widget_set_tooltip_text (check_save_view,        _("Save expanded paths and restore them whenever the path is visible in the treeview."));
+    gtk_widget_set_tooltip_text (check_hidden,           _("Hide the complete sidebar with the treeview."));
+    gtk_widget_set_tooltip_text (check_hide_nav,         _("Hide the navigation/address bar above the treeview."));
+    gtk_widget_set_tooltip_text (check_hide_search,      _("Hide the search bar above the treeview."));
+    gtk_widget_set_tooltip_text (check_hide_tools,       _("Hide the toolbar above the treeview."));
+    gtk_widget_set_tooltip_text (spin_search_delay,      _("When typing inside the search bar, the treeview will not be updated until this time has passed to increase performance."));
+    gtk_widget_set_tooltip_text (spin_fullsearch_wait,   _("When typing inside the search bar, the tree will be fully expanded (and searched recursively) if enough characters have been entered."));
+    gtk_widget_set_tooltip_text (check_show_hidden,      _("Show hidden files (filenames starting with a dot) in the treeview."));
+    gtk_widget_set_tooltip_text (check_filter_enabled,   _("Show only files with matching extension (e.g. mp3) in the treeview."));
+    gtk_widget_set_tooltip_text (radio_filter_auto,      _("Use an automatic list of file extensions that is based on the active plugins (so only playable files will be shown)."));
+    gtk_widget_set_tooltip_text (radio_filter_custom,    _("Use a custom list of file extensions. Most users would want to use the auto-filter instead."));
+    gtk_widget_set_tooltip_text (entry_filter,           _("Enter a list of file extensions (separated by semicolon) to be shown in the treeview."));
+    gtk_widget_set_tooltip_text (check_show_bookmarks,   _("Show GTK bookmarks on top of the treeview. These bookmarks are shared with other applications, e.g. file browsers."));
+    gtk_widget_set_tooltip_text (entry_bookmarks_file,   _("Show user-defined bookmarks on top of the treeview. These bookmarks are stored in the given file, and are not shared with other applications by default."));
+    gtk_widget_set_tooltip_text (check_show_icons,       _("Show folder/file icons in the treeview. Thhis also affects coverart icons."));
+    gtk_widget_set_tooltip_text (spin_icon_size,         _("Set the size for folder/file icons. Note that coverart icons can be set to a different size."));
+    gtk_widget_set_tooltip_text (entry_coverart,         _("Enter a list of coverart images to search (separated by semicolon). The first matching file that is found inside a directory will be used as coverart icon."));
+    gtk_widget_set_tooltip_text (spin_coverart_size,     _("Set the size for coverart icons."));
+    gtk_widget_set_tooltip_text (check_coverart_scale,   _("If enabled, coverart icons will be scaled and padded if necessary to generate a square icon. If disabled, coverart icons can be wider than normal if the original image is non-square."));
+    gtk_widget_set_tooltip_text (check_sort_tree,        _("Sort treeview contents by name. If disabled, contents will be sorted by modification date (recently-changed files on top)."));
+    gtk_widget_set_tooltip_text (check_show_treelines,   _("Show lines in the treeview to indicate different levels of subdirectories."));
+    gtk_widget_set_tooltip_text (spin_font_size,         _("Set the font size to be used in the treeview. May need a restart of the player."));
+    gtk_widget_set_tooltip_text (button_color_bg,        _("Set the background color to be used in the treeview. May need a restart of the player."));
+    gtk_widget_set_tooltip_text (button_color_fg,        _("Set the foregound/text color to be used in the treeview. May need a restart of the player."));
+    gtk_widget_set_tooltip_text (button_color_bg_sel,    _("Set the background color of selected paths to be used in the treeview. May need a restart of the player."));
+    gtk_widget_set_tooltip_text (button_color_fg_sel,    _("Set the foregound/text color of selected paths to be used in the treeview. May need a restart of the player. Does not seem to work with GTK 3."));
 
     gtk_container_set_border_width (GTK_CONTAINER (page1), 8);
     gtk_container_set_border_width (GTK_CONTAINER (page2), 8);
@@ -2237,6 +2283,7 @@ treeview_clear_expanded (void)
             g_free (node->data);
     }
     g_slist_free (expanded_rows);
+
     expanded_rows = g_slist_alloc ();  // make sure expanded_rows stays valid
 }
 
@@ -2462,8 +2509,6 @@ treebrowser_browse (gchar *directory, gpointer parent)
                             gtk_tree_model_get_path (GTK_TREE_MODEL (treestore), parent),
                             FALSE);
     }
-    //else
-    //    treebrowser_load_bookmarks ();
 
     g_free (directory);
 
@@ -2481,24 +2526,6 @@ treebrowser_bookmarks_set_state (void)
                         &bookmarks_iter);
     else
         bookmarks_expanded = FALSE;
-}
-
-gboolean
-bookmarks_foreach_func (GtkTreeModel *model, GtkTreePath  *path, GtkTreeIter  *iter, GList **rowref_list)
-{
-    g_assert (rowref_list != NULL);
-
-    gboolean flag;
-    gtk_tree_model_get (model, iter, TREEBROWSER_COLUMN_FLAG, &flag, -1);
-
-    if (flag == TREEBROWSER_FLAGS_BOOKMARK)
-    {
-        GtkTreeRowReference  *rowref;
-        rowref = gtk_tree_row_reference_new (model, path);
-        *rowref_list = g_list_append (*rowref_list, rowref);
-    }
-
-    return FALSE; // do not stop walking the store, call us with next row
 }
 
 /* Load user's bookmarks into top of tree */
@@ -2567,9 +2594,30 @@ treebrowser_load_bookmarks_helper (const gchar *filename)
 }
 
 static void
-treebrowser_load_bookmarks ()
+treebrowser_load_bookmarks (void)
 {
-    // clear bookmarks
+    treebrowser_clear_bookmarks ();
+
+    // GTK bookmarks
+    if (CONFIG_SHOW_BOOKMARKS)
+    {
+#if !GTK_CHECK_VERSION(3,0,0)
+        treebrowser_load_bookmarks_helper ("$HOME/.gtk-bookmarks");
+#else
+        treebrowser_load_bookmarks_helper ("$HOME/.config/gtk-3.0/bookmarks");
+#endif
+    }
+
+    // extra bookmarks defined by user
+    if (CONFIG_BOOKMARKS_FILE)
+    {
+        treebrowser_load_bookmarks_helper (CONFIG_BOOKMARKS_FILE);
+    }
+}
+
+static void
+treebrowser_clear_bookmarks (void)
+{
     GList *bookmarks_list = NULL;
     gtk_tree_model_foreach (GTK_TREE_MODEL (treestore), (GtkTreeModelForeachFunc) bookmarks_foreach_func, &bookmarks_list);
 
@@ -2589,23 +2637,6 @@ treebrowser_load_bookmarks ()
 
     g_list_foreach (bookmarks_list, (GFunc) gtk_tree_row_reference_free, NULL);
     g_list_free (bookmarks_list);
-
-
-    // GTK bookmarks
-    if (CONFIG_SHOW_BOOKMARKS)
-    {
-#if !GTK_CHECK_VERSION(3,0,0)
-        treebrowser_load_bookmarks_helper ("$HOME/.gtk-bookmarks");
-#else
-        treebrowser_load_bookmarks_helper ("$HOME/.config/gtk-3.0/bookmarks");
-#endif
-    }
-
-    // extra bookmarks defined by user
-    if (CONFIG_BOOKMARKS_FILE)
-    {
-        treebrowser_load_bookmarks_helper (CONFIG_BOOKMARKS_FILE);
-    }
 }
 
 
@@ -3029,7 +3060,7 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
             }
             else if (event->state & GDK_SHIFT_MASK)
             {
-                // add to selection - FIXME: allow unselecting too
+                // add to selection
                 if (mouseclick_lastpath != NULL)
                 {
                     gint depth = gtk_tree_path_get_depth (path);
@@ -3078,7 +3109,7 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
             {
                 add_uri_to_playlist (uri_list, PLT_CURRENT, FALSE);  // replace
             }
-            else if (event->state & GDK_SHIFT_MASK)
+            else if (event->state & GDK_SHIFT_MASK)  // create
             {
                 add_uri_to_playlist (uri_list, PLT_NEW, TRUE);
             }
@@ -3105,6 +3136,7 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
 
             GtkWidget *menu;
             menu = create_popup_menu (path, "", uri_list);
+
             // create new accel group to avoid conflicts with main window
             gtk_menu_set_accel_group (GTK_MENU (menu), gtk_accel_group_new ());
             gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, event->button, event->time);
@@ -3141,7 +3173,6 @@ on_treeview_mouseclick_release (GtkWidget *widget, GdkEventButton *event,
 
         if (mouseclick_dragwait)
         {
-            mouseclick_lastpath = path;
             mouseclick_dragwait = FALSE;
             if (! (event->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)))
             {
@@ -3149,6 +3180,8 @@ on_treeview_mouseclick_release (GtkWidget *widget, GdkEventButton *event,
                 gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
             }
         }
+
+        mouseclick_lastpath = path;
     }
 
     return TRUE;
