@@ -2207,7 +2207,7 @@ get_icon_for_uri (gchar *uri)
 
     if (! g_file_test (uri, G_FILE_TEST_IS_DIR))
     {
-#if GIO_CHECK_VERSION(2, 34, 0)
+#if GLIB_CHECK_VERSION(2, 34, 0)
         gchar *content_type;
         gchar *icon_name;
         GtkIconTheme *icon_theme;
