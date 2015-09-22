@@ -52,8 +52,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <glib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
+#include <gio/gio.h>
 
 #include <deadbeef/deadbeef.h>
 #include <deadbeef/gtkui_api.h>
@@ -2948,7 +2950,13 @@ on_searchbar_timeout ()
         return FALSE;
 
     // avoid calling this function too often as it is quite expensive
+#if GLIB_CHECK_VERSION(2, 28, 0)
     gint64 now = g_get_monotonic_time ();
+#else
+    GTimeVal time_now;
+    g_get_current_time (&time_now);
+    gint64 now = 1000000L * time_now.tv_sec + time_now.tv_usec;
+#endif
     if (now - last_searchbar_change < 1000*CONFIG_SEARCH_DELAY)  // time given in usec
         return TRUE;
     last_searchbar_change = 0;
@@ -2988,7 +2996,15 @@ static void
 on_searchbar_changed ()
 {
     if (last_searchbar_change == 0)
+    {
+#if GLIB_CHECK_VERSION(2, 28, 0)
         last_searchbar_change = g_get_monotonic_time ();
+#else
+        GTimeVal time_now;
+        g_get_current_time (&time_now);
+        last_searchbar_change = 1000000L * time_now.tv_sec + time_now.tv_usec;
+#endif
+    }
 
     g_timeout_add (100, on_searchbar_timeout, NULL);
 }
@@ -3209,7 +3225,7 @@ on_treeview_mousemove (GtkWidget *widget, GdkEventButton *event)
                 .info = 0
             };
             GtkTargetList *target = gtk_target_list_new (&entry, 1);
-#if !GTK_CHECK_VERSION(3,0,0)
+#if !GTK_CHECK_VERSION(3,10,0)
             gtk_drag_begin (widget, target, GDK_ACTION_COPY | GDK_ACTION_MOVE, 1, (GdkEvent *)event);
 #else
             gtk_drag_begin_with_coordinates (widget, target, GDK_ACTION_COPY | GDK_ACTION_MOVE, 1, (GdkEvent *)event, -1, -1);

@@ -35,7 +35,7 @@ endif
 
 # normal lib
 if DEBUG
-EXTRA_FLAGS = -g3 -ggdb
+EXTRA_FLAGS = -g3 -ggdb -Wall
 else
 EXTRA_FLAGS = -Werror
 endif
