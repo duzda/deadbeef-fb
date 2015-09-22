@@ -1069,9 +1069,11 @@ create_view_and_model (void)
     gtk_tree_view_column_set_spacing (treeview_column_text, 0);
     gtk_tree_view_column_set_sizing (treeview_column_text, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 
+#if GTK_CHECK_VERSION(2, 18, 0)
     gtk_cell_renderer_set_alignment (render_icon, 0, 0.5);  // left-middle
     gtk_cell_renderer_set_alignment (render_text, 0, 0.5);  // left-middle
     gtk_cell_renderer_set_padding (render_text, 4, 0);
+#endif
 
     if (CONFIG_FONT_SIZE > 0)
         g_object_set (render_text, "size", CONFIG_FONT_SIZE*1024, NULL);
