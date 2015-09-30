@@ -1126,11 +1126,11 @@ create_sidebar (void)
     addressbar          = gtk_combo_box_text_new_with_entry ();
 #else
     sidebar             = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-    sidebar_toolbar     = gtk_toolbar_new ();
     sidebar_searchbox   = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     sidebar_addressbox  = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     addressbar          = gtk_combo_box_text_new_with_entry ();
 #endif
+    sidebar_toolbar     = gtk_toolbar_new ();
 #if !GTK_CHECK_VERSION(3,6,0)
     searchbar           = gtk_entry_new ();
     button_clear        = gtk_button_new_with_label (_("Clear"));
