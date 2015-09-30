@@ -131,24 +131,36 @@ utils_get_utf8_from_locale(const gchar *locale_text)
 }
 
 /* Get current home directory */
-void
-utils_expand_home_dir (gchar *path)
+gchar *
+utils_expand_home_dir (const gchar *path)
 {
-    if (g_strrstr (path, "$HOME"))
+    gchar *expanded_path = g_strdup (path);
+
+    if (g_strrstr (expanded_path, "~"))
     {
-        gchar **split = g_strsplit (path, "$HOME", 0);
-        g_free (path);
-        path = g_strjoinv (g_getenv ("HOME"), split);
+        gchar **split = g_strsplit (expanded_path, "~", 0);
+        g_free (expanded_path);
+        expanded_path = g_strjoinv (g_getenv ("HOME"), split);
         g_strfreev (split);
     }
 
-    if (g_strrstr (path, "${HOME}"))
+    if (g_strrstr (expanded_path, "$HOME"))
     {
-        gchar **split = g_strsplit (path, "${HOME}", 0);
-        g_free (path);
-        path = g_strjoinv (g_getenv ("HOME"), split);
+        gchar **split = g_strsplit (expanded_path, "$HOME", 0);
+        g_free (expanded_path);
+        expanded_path = g_strjoinv (g_getenv ("HOME"), split);
         g_strfreev (split);
     }
+
+    if (g_strrstr (expanded_path, "${HOME}"))
+    {
+        gchar **split = g_strsplit (expanded_path, "${HOME}", 0);
+        g_free (expanded_path);
+        expanded_path = g_strjoinv (g_getenv ("HOME"), split);
+        g_strfreev (split);
+    }
+
+    return expanded_path;
 }
 
 /* Get URI tooltip from URI, escaping ampersands ('&') */

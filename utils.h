@@ -21,7 +21,7 @@ gint            utils_str_casecmp (const gchar *s1, const gchar *s2);
 GSList *        utils_get_file_list_full (const gchar *path, gboolean full_path, gboolean sort, GError **error);
 GSList *        utils_get_file_list (const gchar *path, guint *length, gboolean sort, GError **error);
 gchar *         utils_get_utf8_from_locale(const gchar *locale_text);
-void            utils_expand_home_dir (gchar *path);
+gchar *         utils_expand_home_dir (const gchar *path);
 gchar *         utils_tooltip_from_uri (const gchar *uri);
 gchar *         utils_make_cache_path (const gchar *uri, gint imgsize, gboolean scale);
 gint            utils_check_dir (const gchar *dir, mode_t mode);

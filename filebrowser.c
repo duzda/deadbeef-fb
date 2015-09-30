@@ -2544,8 +2544,7 @@ treebrowser_load_bookmarks_helper (const gchar *filename)
     gchar           *pos;
     GdkPixbuf       *icon = NULL;
 
-    bookmarks = g_strdup (filename);
-    utils_expand_home_dir (bookmarks);
+    bookmarks = utils_expand_home_dir (filename);
 
     trace("loading bookmarks from file: %s\n", bookmarks);
     if (g_file_get_contents (bookmarks, &contents, NULL, NULL))
