@@ -73,7 +73,4 @@ sleep 5
 git commit -a -m "release ${DATE}" || exit $?
 echo "> Pushing commits ..."
 git push || exit $?
-git tag -f -m "v${VERSION}" ${DATE} || exit $?
-echo "> Pushing tags ..."
-git push -f origin ${DATE} || exit $?
 cd ${BUILDROOT}
