@@ -3,13 +3,14 @@
 PACKAGENAME=deadbeef-fb
 
 DATE=$1
+FLAG=$2
+
 if [ -z "$DATE" ]; then
     DATE=`date +%Y%m%d`
 fi
 
-FLAG=$2
-
 BUILDROOT="$(pwd)"
+VERSION="$(cat ${BUILDROOT}/version)"
 
 DISTPACKAGENAME=${PACKAGENAME}-devel
 INSTALLDIR=${BUILDROOT}/install
@@ -22,8 +23,9 @@ mkdir -p ${RELEASEDIR}/binary
 mkdir -p ${RELEASEDIR}/source
 
 echo "=============================================================================="
-echo "Building binary release for ${PACKAGENAME}${FLAG} ..."
+echo "Building binary release for ${PACKAGENAME}${FLAG} v${VERSION} ..."
 
+cd ${BUILDROOT}
 rm -rf ${INSTALLDIR}
 mkdir -p ${INSTALLDIR}/${PACKAGENAME}
 make DESTDIR=${INSTALLDIR} install
@@ -41,14 +43,15 @@ if [ -d ${INSTALLDIR} ]; then
 fi
 
 echo "=============================================================================="
-echo "Building source release for ${PACKAGENAME}${FLAG} ..."
+echo "Building source release for ${PACKAGENAME}${FLAG} v${VERSION} ..."
 
+cd ${BUILDROOT}
 rm -f ${DISTPACKAGENAME}.tar.gz
 make dist PACKAGE=${PACKAGENAME} || exit $?
 mv ${DISTPACKAGENAME}.tar.gz ${SRCTARGET} || exit $?
 
 echo "=============================================================================="
-echo "Updating releases for ${PACKAGENAME}${FLAG} ..."
+echo "Updating releases for ${PACKAGENAME}${FLAG} v${VERSION} ..."
 
 cd ${RELEASEDIR}
 if [ ! -d ${PACKAGENAME} ]; then
@@ -68,5 +71,9 @@ git status
 echo ">>> Press CTRL+C to abort ..."
 sleep 5
 git commit -a -m "release ${DATE}" || exit $?
+echo "> Pushing commits ..."
 git push || exit $?
+git tag -f -m "v${VERSION}" ${DATE} || exit $?
+echo "> Pushing tags ..."
+git push -f origin ${DATE} || exit $?
 cd ${BUILDROOT}

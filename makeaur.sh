@@ -3,13 +3,15 @@
 PACKAGENAME=deadbeef-fb
 
 DATE=$1
+FLAG=$2
+
 if [ -z "$DATE" ]; then
     DATE=`date +%Y%m%d`
 fi
 
-FLAG=$2
-
 BUILDROOT="$(pwd)"
+VERSION="$(cat ${BUILDROOT}/version)"
+
 RELEASEDIR=${BUILDROOT}/release
 AURDIR=${BUILDROOT}/aur
 
@@ -30,18 +32,17 @@ function make_package
 {
     AURPACKAGENAME=$1
     AURPACKAGEFLAG=$2
-    AURPACKAGEREL=$3
-    AURPACKAGEDEPS=$4
-    AURPACKAGECONFIG=$5
+    AURPACKAGEDEPS=$3
+    AURPACKAGECONFIG=$4
 
     echo "=============================================================================="
-    echo "Building AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL} ..."
+    echo "Building AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE} v${VERSION} ..."
 
     cd ${BUILDROOT}
     cat PKGBUILD.in \
         | sed s/@PACKAGENAME@/${AURPACKAGENAME}/g \
         | sed s/@PACKAGEFLAG@/${AURPACKAGEFLAG}/g \
-        | sed s/@PACKAGEREL@/${AURPACKAGEREL}/g \
+        | sed s/@PACKAGEREL@/${VERSION}/g \
         | sed s/@PACKAGEVER@/${DATE}/g \
         | sed s/@PACKAGEDEPS@/${AURPACKAGEDEPS}/g \
         | sed s/@PACKAGECONFIG@/${AURPACKAGECONFIG}/g \
@@ -56,7 +57,7 @@ function make_package
     mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${AURDIR}/package/
 
     echo "=============================================================================="
-    echo "Testing AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL} ..."
+    echo "Testing AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE} v${VERSION} ..."
 
     mkdir -p ${AURDIR}/test
     cd ${AURDIR}/test
@@ -70,7 +71,7 @@ function make_package
     cd ${BUILDROOT}
 
     echo "=============================================================================="
-    echo "Updating AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL} ..."
+    echo "Updating AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE} v${VERSION} ..."
 
     cd ${AURDIR}
     if [ ! -d ${AURPACKAGENAME}${AURPACKAGEFLAG} ]; then
@@ -87,11 +88,13 @@ function make_package
     git status
     echo ">>> Press CTRL+C to abort ..."
     sleep 5
-    git commit -a -m "release ${DATE}" || exit $?
-    git push || exit $?
+    #git commit -a -m "release ${DATE}" || exit $?
+    echo "> Pushing commits ..."
+    #git push || exit $? || exit $?
     cd ${BUILDROOT}
 
 }
 
-make_package "deadbeef-plugin-fb" ""      1 "gtk2" "--disable-gtk3"
-make_package "deadbeef-plugin-fb" "-gtk3" 1 "gtk3" "--disable-gtk2"
+#            name                 flag    deps   config
+make_package "deadbeef-plugin-fb" ""      "gtk2" "--disable-gtk3"
+make_package "deadbeef-plugin-fb" "-gtk3" "gtk3" "--disable-gtk2"

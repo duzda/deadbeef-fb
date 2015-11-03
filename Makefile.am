@@ -1,5 +1,6 @@
 release: all
 	./makerelease.sh
+	./makeaur.sh
 
 #SUBDIRS = \
 #	intl \
@@ -33,11 +34,14 @@ pkglib_LTLIBRARIES = ddb_misc_filebrowser_GTK3.la
 endif
 endif
 
+
+EXTRA_FLAGS = -DPLUGIN_VERSION_MAJOR=$(shell cat version | cut -d . -f 1) -DPLUGIN_VERSION_MINOR=$(shell cat version | cut -d . -f 2)
+
 # normal lib
 if DEBUG
-EXTRA_FLAGS = -g3 -ggdb -Wall
+EXTRA_FLAGS = $(EXTRA_FLAGS) -g3 -ggdb -Wall
 else
-EXTRA_FLAGS = -Werror
+EXTRA_FLAGS = $(EXTRA_FLAGS) -Werror
 endif
 
 if HAVE_GTK2

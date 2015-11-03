@@ -44,8 +44,6 @@
  *      CONFIG_EXPAND_2CLICK        -> Expand tree items by double-click on row
  *
  */
-#define PLUGIN_VERSION_MAJOR    0
-#define PLUGIN_VERSION_MINOR    86
 
 #include <sys/types.h>
 #include <sys/stat.h>
