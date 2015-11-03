@@ -51,23 +51,23 @@ function make_package
         | sed s/@SHA1SUM@/${SHA1SUM}/g \
         | sed s/@SHA256SUM@/${SHA256SUM}/g \
         > PKGBUILD
-    makepkg --source -f || exit $?
     rm -f "deadbeef-fb_${DATE}_src.tar.gz"
+    makepkg --source -f || exit $?
     mkdir -p ${AURDIR}/package
-    mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${AURDIR}/package/
+    mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${VERSION}.src.tar.gz ${AURDIR}/package/
 
     echo "=============================================================================="
     echo "Testing AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE} v${VERSION} ..."
 
     mkdir -p ${AURDIR}/test
     cd ${AURDIR}/test
-    tar -xzf ${AURDIR}/package/${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz || exit $?
+    tar -xzf ${AURDIR}/package/${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${VERSION}.src.tar.gz || exit $?
     ls -l
     cd ${AURPACKAGENAME}${AURPACKAGEFLAG}
     echo "> $(pwd)"
     namcap PKGBUILD || exit $?
     makepkg -f || exit $?
-    namcap ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}-any.pkg.tar.xz || exit $?
+    namcap ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${VERSION}-any.pkg.tar.xz || exit $?
     cd ${BUILDROOT}
 
     echo "=============================================================================="

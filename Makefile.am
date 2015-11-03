@@ -35,30 +35,30 @@ endif
 endif
 
 
-EXTRA_FLAGS = -DPLUGIN_VERSION_MAJOR=$(shell cat version | cut -d . -f 1) -DPLUGIN_VERSION_MINOR=$(shell cat version | cut -d . -f 2)
-
 # normal lib
 if DEBUG
-EXTRA_FLAGS = $(EXTRA_FLAGS) -g3 -ggdb -Wall
+EXTRA_FLAGS = -g3 -ggdb -Wall
 else
-EXTRA_FLAGS = $(EXTRA_FLAGS) -Werror
+EXTRA_FLAGS = -Werror
 endif
+
+VERSION_FLAGS = -DPLUGIN_VERSION_MAJOR=$(shell cat version | cut -d . -f 1) -DPLUGIN_VERSION_MINOR=$(shell cat version | cut -d . -f 2)
 
 if HAVE_GTK2
 ddb_misc_filebrowser_GTK2_la_SOURCES = $(filebrowser_SOURCES)
 ddb_misc_filebrowser_GTK2_la_LDFLAGS = -module
 ddb_misc_filebrowser_GTK2_la_LIBADD  = $(LDADD) $(GTK2_DEPS_LIBS)
-ddb_misc_filebrowser_GTK2_la_CFLAGS  = -std=c99 $(GTK2_DEPS_CFLAGS) $(EXTRA_FLAGS)
+ddb_misc_filebrowser_GTK2_la_CFLAGS  = -std=c99 $(GTK2_DEPS_CFLAGS) $(EXTRA_FLAGS) $(VERSION_FLAGS)
 endif
 if HAVE_GTK3
 ddb_misc_filebrowser_GTK3_la_SOURCES = $(filebrowser_SOURCES)
 ddb_misc_filebrowser_GTK3_la_LDFLAGS = -module
 ddb_misc_filebrowser_GTK3_la_LIBADD  = $(LDADD) $(GTK3_DEPS_LIBS)
-ddb_misc_filebrowser_GTK3_la_CFLAGS  = -std=c99 $(GTK3_DEPS_CFLAGS) $(EXTRA_FLAGS)
+ddb_misc_filebrowser_GTK3_la_CFLAGS  = -std=c99 $(GTK3_DEPS_CFLAGS) $(EXTRA_FLAGS) $(VERSION_FLAGS)
 endif
 
 docsdir = $(docdir)
-docs_DATA = README COPYING AUTHORS ChangeLog
+docs_DATA = README COPYING LICENSE AUTHORS ChangeLog version
 
 dist_data_DATA =
 
