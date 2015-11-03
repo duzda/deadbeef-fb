@@ -9,14 +9,20 @@ fi
 
 FLAG=$2
 
-BUILDROOT=`pwd`
+BUILDROOT="$(pwd)"
 
 DISTPACKAGENAME=${PACKAGENAME}-devel
-INSTALLDIR=${BUILDROOT}/../install
+INSTALLDIR=${BUILDROOT}/install
+RELEASEDIR=${BUILDROOT}/release
 
-DATE=`date +%Y%m%d`
-BINTARGET=${BUILDROOT}/../release/binary/${PACKAGENAME}${FLAG}_${DATE}.tar.gz
-SRCTARGET=${BUILDROOT}/../release/source/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
+BINTARGET=${RELEASEDIR}/binary/${PACKAGENAME}${FLAG}_${DATE}.tar.gz
+SRCTARGET=${RELEASEDIR}/source/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
+
+mkdir -p ${RELEASEDIR}/binary
+mkdir -p ${RELEASEDIR}/source
+
+echo "=============================================================================="
+echo "Building binary release for ${PACKAGENAME}${FLAG} ..."
 
 rm -rf ${INSTALLDIR}
 mkdir -p ${INSTALLDIR}/${PACKAGENAME}
@@ -34,17 +40,31 @@ if [ -d ${INSTALLDIR} ]; then
     cd ${BUILDROOT}
 fi
 
+echo "=============================================================================="
+echo "Building source release for ${PACKAGENAME}${FLAG} ..."
+
 rm -f ${DISTPACKAGENAME}.tar.gz
 make dist PACKAGE=${PACKAGENAME} || exit $?
 mv ${DISTPACKAGENAME}.tar.gz ${SRCTARGET} || exit $?
 
-cd ${BUILDROOT}/../release/
-ls -lh ${SRCTARGET} ${BINTARGET}
-cp -v ${BUILDROOT}/README ./README || exit $?
-git add ${SRCTARGET} ${BINTARGET}
+echo "=============================================================================="
+echo "Updating releases for ${PACKAGENAME}${FLAG} ..."
+
+cd ${RELEASEDIR}
+if [ ! -d ${PACKAGENAME} ]; then
+    echo "> Getting a fresh copy of the release repository ..."
+    git clone -b release git@gitlab.com:zykure/${PACKAGENAME}.git || exit $?
+fi
+cd ${PACKAGENAME}
+cp ${BUILDROOT}/README ./README || exit $?
+cp ${BINTARGET} ./$(basename ${BINTARGET}) || exit $?
+cp ${SRCTARGET} ./$(basename ${SRCTARGET}) || exit $?
+git add README || exit $?
+git add $(basename ${BINTARGET}) || exit $?
+git add $(basename ${SRCTARGET}) || exit $?
 git status
-echo "> Press CTRL+C to abort ..."
+echo ">>> Press CTRL+C to abort ..."
 sleep 5
 git commit -a -m "release ${DATE}" || exit $?
-git push
+git push || exit $?
 cd ${BUILDROOT}

@@ -5,6 +5,7 @@ if [ -d .git ]; then
 	git log > ChangeLog
 fi
 
+mkdir -p m4
 aclocal
 autoheader
 libtoolize

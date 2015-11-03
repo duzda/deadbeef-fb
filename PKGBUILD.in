@@ -18,14 +18,14 @@ sha1sums=('@SHA1SUM@')
 sha256sums=('@SHA256SUM@')
 
 build() {
-  cd $srcdir/deadbeef-fb.git
+  cd ${srcdir}/deadbeef-fb-@PACKAGEVER@-*
   ./autogen.sh
   ./configure --prefix=/usr @PACKAGECONFIG@
   make
 }
 
 package() {
-  cd $srcdir/deadbeef-fb.git
+  cd ${srcdir}/deadbeef-fb-@PACKAGEVER@-*
   make DESTDIR="$pkgdir" install
 }
 

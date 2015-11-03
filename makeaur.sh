@@ -10,8 +10,11 @@ fi
 FLAG=$2
 
 BUILDROOT="$(pwd)"
+AURDIR=${BUILDROOT}/aur
 
-SRCTARGET=${BUILDROOT}/../aur/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
+SRCTARGET=${AURDIR}/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
+
+mkdir -p ${AURDIR}
 
 wget "https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=${DATE}" -O $SRCTARGET || exit $?
 MD5SUM=$(md5sum ${SRCTARGET} | cut -c -32)
@@ -29,6 +32,7 @@ function make_package
     echo "=============================================================================="
     echo "Building AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL} ..."
 
+    cd ${BUILDROOT}
     cat PKGBUILD.in \
         | sed s/@PACKAGENAME@/${AURPACKAGENAME}/g \
         | sed s/@PACKAGEFLAG@/${AURPACKAGEFLAG}/g \
@@ -43,35 +47,43 @@ function make_package
         > PKGBUILD
     makepkg --source -f || exit $?
     rm -f "archive.tar.gz?ref=${DATE}"
-    mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${BUILDROOT}/../aur/
+    mkdir -p ${AURDIR}/package
+    mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${AURDIR}/package/
 
     echo "=============================================================================="
     echo "Testing AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL} ..."
 
-    cd ${BUILDROOT}/../aur/
-    rm -rf ${AURPACKAGENAME}${AURPACKAGEFLAG}
-    tar -xzf ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz || exit $?
+    mkdir -p ${AURDIR}/test
+    cd ${AURDIR}/test
+    tar -xzf ${AURDIR}/package/${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz || exit $?
+    ls -l
     cd ${AURPACKAGENAME}${AURPACKAGEFLAG}
     echo "> $(pwd)"
-    makepkg -f || exit $?
     namcap PKGBUILD || exit $?
+    makepkg -f || exit $?
     namcap ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}-any.pkg.tar.xz || exit $?
     cd ${BUILDROOT}
 
     echo "=============================================================================="
     echo "Updating AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL} ..."
 
-    cd ${BUILDROOT}/../aur/
-    cd ${AURPACKAGENAME}${AURPACKAGEFLAG}.git
+    cd ${AURDIR}
+    if [ ! -d ${AURPACKAGENAME}${AURPACKAGEFLAG} ]; then
+        echo "> Getting a fresh copy of the AUR repository ..."
+        git clone ssh://aurssh/${AURPACKAGENAME}${AURPACKAGEFLAG}.git || exit $?
+    fi
+    cd ${AURPACKAGENAME}${AURPACKAGEFLAG}
     git pull || exit $?
-    cp -v ${BUILDROOT}/PKGBUILD ./
+    cp -v ${BUILDROOT}/PKGBUILD ./PKGBUILD || exit $?
     namcap PKGBUILD || exit $?
     mksrcinfo || exit $?
+    git add PKGBUILD || exit $?
+    git add .SRCINFO || exit $?
     git status
-    echo "> Press CTRL+C to abort ..."
+    echo ">>> Press CTRL+C to abort ..."
     sleep 5
     git commit -a -m "release ${DATE}" || exit $?
-    git push
+    git push || exit $?
     cd ${BUILDROOT}
 
 }

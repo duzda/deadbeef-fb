@@ -42,3 +42,6 @@ po/Makevars.template
 *.so
 /.project
 PKGBUILD
+install/
+release/
+aur/
