@@ -17,11 +17,12 @@ config.sub
 depcomp
 stamp-h*
 *.zip
+*.tar.gz
+*.tar.gz.part
 *.log
 *.guess
 autom4te.cache
 tags
-todo.txt
 test
 .deps
 install-sh
@@ -40,8 +41,9 @@ POTFILES
 stamp-it
 po/Makevars.template
 *.so
-/.project
+.project
 PKGBUILD
 install/
 release/
 aur/
+todo.txt

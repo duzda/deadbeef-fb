@@ -10,16 +10,21 @@ fi
 FLAG=$2
 
 BUILDROOT="$(pwd)"
+RELEASEDIR=${BUILDROOT}/release
 AURDIR=${BUILDROOT}/aur
 
-SRCTARGET=${AURDIR}/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
+SRCTARGET=${RELEASEDIR}/source/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
 
-mkdir -p ${AURDIR}
-
-wget "https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=${DATE}" -O $SRCTARGET || exit $?
+ls -l $SRCTARGET
 MD5SUM=$(md5sum ${SRCTARGET} | cut -c -32)
 SHA1SUM=$(sha1sum ${SRCTARGET} | cut -c -40)
 SHA256SUM=$(sha256sum ${SRCTARGET} | cut -c -64)
+
+echo "> MD5:    ${MD5SUM}"
+echo "> SHA1:   ${SHA1SUM}"
+echo "> SHA256: ${SHA256SUM}"
+
+mkdir -p ${AURDIR}
 
 function make_package
 {
@@ -46,7 +51,7 @@ function make_package
         | sed s/@SHA256SUM@/${SHA256SUM}/g \
         > PKGBUILD
     makepkg --source -f || exit $?
-    rm -f "archive.tar.gz?ref=${DATE}"
+    rm -f "deadbeef-fb_${DATE}_src.tar.gz"
     mkdir -p ${AURDIR}/package
     mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${AURPACKAGEREL}.src.tar.gz ${AURDIR}/package/
 

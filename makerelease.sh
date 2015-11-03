@@ -56,12 +56,14 @@ if [ ! -d ${PACKAGENAME} ]; then
     git clone -b release git@gitlab.com:zykure/${PACKAGENAME}.git || exit $?
 fi
 cd ${PACKAGENAME}
+mkdir -p binary
+mkdir -p source
 cp ${BUILDROOT}/README ./README || exit $?
-cp ${BINTARGET} ./$(basename ${BINTARGET}) || exit $?
-cp ${SRCTARGET} ./$(basename ${SRCTARGET}) || exit $?
+cp ${BINTARGET} ./binary/ || exit $?
+cp ${SRCTARGET} ./source/ || exit $?
 git add README || exit $?
-git add $(basename ${BINTARGET}) || exit $?
-git add $(basename ${SRCTARGET}) || exit $?
+git add binary/ || exit $?
+git add source/ || exit $?
 git status
 echo ">>> Press CTRL+C to abort ..."
 sleep 5

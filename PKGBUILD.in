@@ -12,20 +12,19 @@ url="https://gitlab.com/zykure/deadbeef-fb"
 license=(GPL)
 depends=('deadbeef>=0.6', @PACKAGEDEPS@)
 backup=()
-source=('https://gitlab.com/zykure/deadbeef-fb/repository/archive.tar.gz?ref=@PACKAGEVER@')
+source=('https://gitlab.com/zykure/deadbeef-fb/raw/release/source/deadbeef-fb_@PACKAGEVER@_src.tar.gz')
 md5sums=('@MD5SUM@')
 sha1sums=('@SHA1SUM@')
 sha256sums=('@SHA256SUM@')
 
 build() {
-  cd ${srcdir}/deadbeef-fb-@PACKAGEVER@-*
-  ./autogen.sh
+  cd ${srcdir}/deadbeef-fb-devel
   ./configure --prefix=/usr @PACKAGECONFIG@
   make
 }
 
 package() {
-  cd ${srcdir}/deadbeef-fb-@PACKAGEVER@-*
+  cd ${srcdir}/deadbeef-fb-devel
   make DESTDIR="$pkgdir" install
 }
 
