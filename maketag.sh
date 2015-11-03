@@ -6,7 +6,7 @@ DATE=$1
 FLAG=$2
 
 if [ -z "$DATE" ]; then
-    DATE=`date +%Y%m%d`
+    DATE=`date -u +%Y%m%d`
 fi
 
 BUILDROOT="$(pwd)"

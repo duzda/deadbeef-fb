@@ -6,7 +6,7 @@ DATE=$1
 FLAG=$2
 
 if [ -z "$DATE" ]; then
-    DATE=`date +%Y%m%d`
+    DATE=`date -u +%Y%m%d`
 fi
 
 BUILDROOT="$(pwd)"
@@ -52,6 +52,7 @@ function make_package
         | sed s/@SHA256SUM@/${SHA256SUM}/g \
         > PKGBUILD
     rm -f "deadbeef-fb_${DATE}_src.tar.gz"
+    rm -f "deadbeef-fb_${DATE}_src.tar.gz.part"
     makepkg --source -f || exit $?
     mkdir -p ${AURDIR}/package
     mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${VERSION}.src.tar.gz ${AURDIR}/package/
@@ -59,6 +60,7 @@ function make_package
     echo "=============================================================================="
     echo "Testing AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE} v${VERSION} ..."
 
+    rm -rf ${AURDIR}/test
     mkdir -p ${AURDIR}/test
     cd ${AURDIR}/test
     tar -xzf ${AURDIR}/package/${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${VERSION}.src.tar.gz || exit $?
@@ -88,9 +90,9 @@ function make_package
     git status
     echo ">>> Press CTRL+C to abort ..."
     sleep 5
-    #git commit -a -m "release ${DATE}" || exit $?
+    git commit -a -m "release ${DATE}" || exit $?
     echo "> Pushing commits ..."
-    #git push || exit $? || exit $?
+    git push || exit $? || exit $?
     cd ${BUILDROOT}
 
 }
