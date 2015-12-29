@@ -3213,7 +3213,7 @@ on_treeview_mousemove (GtkWidget *widget, GdkEventButton *event)
 
     if (mouseclick_dragwait)
     {
-        if (gtk_drag_check_threshold (widget, mouseclick_lastpos[0], event->x, mouseclick_lastpos[1], event->y))
+        if (gtk_drag_check_threshold (widget, mouseclick_lastpos[0], mouseclick_lastpos[1], event->x, event->y))
         {
             mouseclick_dragwait = FALSE;
             GtkTargetEntry entry =
