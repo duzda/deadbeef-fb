@@ -289,7 +289,7 @@ utils_construct_style (GtkWidget *widget, const gchar *bgcolor, const gchar *fgc
 #endif
 
     gchar* style_str = g_string_free (style, FALSE);
-    fprintf(stderr, "gtk style: \n%s", style_str);
+
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_rc_parse_string (style_str);
 #else
