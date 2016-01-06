@@ -19,9 +19,6 @@ cd ${BUILDROOT}
 git status
 echo ">>> Press CTRL+C to abort ..."
 sleep 5
-git commit -a || exit $?
-echo "> Pushing commits ..."
-git push || exit $?
 git tag -f -m "v${VERSION}" ${DATE} || exit $?
 echo "> Pushing tags ..."
 git push -f origin ${DATE} || exit $?
