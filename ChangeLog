@@ -1,3 +1,75 @@
+commit f3a904e91bace65f35ba87d849c1cd00ec7f15aa
+Merge: 4c56899 e652321
+Author: zykure <zykure42@gmail.com>
+Date:   Mon Jan 4 08:29:36 2016 +0000
+
+    Merge branch 'fixes' into 'master'
+    
+    Fixes
+    
+    Don't do debug printfs in committed code.
+    
+    Also fix the argument order for gtk_drag_check_threshold so it actually works.
+    
+    
+    See merge request !3
+
+commit e6523218e81bee33f5407dd2fd1823ead39d2775
+Author: Nicolai Syvertsen <saivert@saivert.com>
+Date:   Tue Dec 29 05:11:18 2015 +0100
+
+    Fix gtk_drag_check_threshold argument order
+
+commit aafab03ea653daf5a14498a8d5a30da1cc444c5b
+Author: Nicolai Syvertsen <saivert@saivert.com>
+Date:   Tue Dec 29 05:08:07 2015 +0100
+
+    Remove debug printf
+
+commit 4c5689941d7ac170b8f0969c7c776c26f9c3e3df
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Nov 4 00:36:11 2015 +0100
+
+    Fix build scripts a final time
+
+commit 2b88f332459d31a0cb8753e702d2e87cf5aad518
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Nov 4 00:12:41 2015 +0100
+
+    More fixes
+
+commit 8cb33c21f4410199e1d8158ee883c43d7b976b43
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Nov 3 23:56:36 2015 +0100
+
+    Fix automated tags
+
+commit 78bfe061efd46cb9de71986feb639f26fcc7cab5
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Nov 3 23:50:26 2015 +0100
+
+    More work on build scripts
+
+commit b14f897f86b7a02fe765111d2c5511a6739d807c
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Nov 3 23:07:48 2015 +0100
+
+    Fix makerelease.sh and use a more intelligent approach in makeaur.sh
+    
+    The AUR build will now only download the latest release, not *all* the ones in the release repository.
+
+commit 80f5d3d634b8ac579f180c42dc1d0357c7b2440d
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Nov 3 22:42:05 2015 +0100
+
+    Add LICENSE file (to make GitLab use it)
+
+commit 487029201d7744a21ed17b27d50c2e083dceb548
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Nov 3 22:39:05 2015 +0100
+
+    Fixing release and AUR build scripts
+
 commit 49014d60da7bcf23e3c53b88e82b2cba50f2ec2a
 Author: Jan Behrens <zykure@web.de>
 Date:   Wed Sep 30 18:50:26 2015 +0200

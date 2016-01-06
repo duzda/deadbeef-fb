@@ -16,14 +16,14 @@ DISTPACKAGENAME=${PACKAGENAME}-devel
 INSTALLDIR=${BUILDROOT}/install
 RELEASEDIR=${BUILDROOT}/release
 
-BINTARGET=${RELEASEDIR}/binary/${PACKAGENAME}${FLAG}_${DATE}.tar.gz
-SRCTARGET=${RELEASEDIR}/source/${PACKAGENAME}${FLAG}_${DATE}_src.tar.gz
+BINTARGET=${RELEASEDIR}/binary/${PACKAGENAME}${FLAG}_${DATE}_${VERSION}.tar.gz
+SRCTARGET=${RELEASEDIR}/source/${PACKAGENAME}${FLAG}_${DATE}_${VERSION}_src.tar.gz
 
 mkdir -p ${RELEASEDIR}/binary
 mkdir -p ${RELEASEDIR}/source
 
 echo "=============================================================================="
-echo "Building binary release for ${PACKAGENAME}${FLAG} v${VERSION} ..."
+echo "Building binary release for ${PACKAGENAME}${FLAG}-${DATE}_${VERSION} ..."
 
 cd ${BUILDROOT}
 rm -rf ${INSTALLDIR}
@@ -38,12 +38,12 @@ if [ -d ${INSTALLDIR} ]; then
     cp -v ${BUILDROOT}/README ./${PACKAGENAME}/ || exit $?
     cp -v ${BUILDROOT}/*install.sh ./${PACKAGENAME}/ || exit $?
     cp -v ${BUILDROOT}/*remove.sh ./${PACKAGENAME}/ || exit $?
-    tar -czf $BINTARGET ${PACKAGENAME} || exit $?
+    tar -czf ${BINTARGET} ${PACKAGENAME} || exit $?
     cd ${BUILDROOT}
 fi
 
 echo "=============================================================================="
-echo "Building source release for ${PACKAGENAME}${FLAG} v${VERSION} ..."
+echo "Building source release for ${PACKAGENAME}${FLAG}-${DATE}_${VERSION} ..."
 
 cd ${BUILDROOT}
 rm -f ${DISTPACKAGENAME}.tar.gz
@@ -51,7 +51,7 @@ make dist PACKAGE=${PACKAGENAME} || exit $?
 mv ${DISTPACKAGENAME}.tar.gz ${SRCTARGET} || exit $?
 
 echo "=============================================================================="
-echo "Updating releases for ${PACKAGENAME}${FLAG} v${VERSION} ..."
+echo "Updating releases for ${PACKAGENAME}${FLAG}-${DATE}_${VERSION} ..."
 
 cd ${RELEASEDIR}
 if [ ! -d ${PACKAGENAME} ]; then

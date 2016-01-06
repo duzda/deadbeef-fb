@@ -13,13 +13,13 @@ BUILDROOT="$(pwd)"
 VERSION="$(cat ${BUILDROOT}/version)"
 
 echo "=============================================================================="
-echo "Updating tag info for ${PACKAGENAME}${FLAG} v${VERSION} ..."
+echo "Updating tag info for ${PACKAGENAME}${FLAG}-${DATE}_${VERSION} ..."
 
 cd ${BUILDROOT}
 git status
 echo ">>> Press CTRL+C to abort ..."
 sleep 5
-git commit -a
+git commit -a || exit $?
 echo "> Pushing commits ..."
 git push || exit $?
 git tag -f -m "v${VERSION}" ${DATE} || exit $?

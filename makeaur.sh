@@ -32,18 +32,19 @@ function make_package
 {
     AURPACKAGENAME=$1
     AURPACKAGEFLAG=$2
-    AURPACKAGEDEPS=$3
-    AURPACKAGECONFIG=$4
+    AURPACKAGEREL=$3
+    AURPACKAGEDEPS=$4
+    AURPACKAGECONFIG=$5
 
     echo "=============================================================================="
-    echo "Building AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE} v${VERSION} ..."
+    echo "Building AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}_${VERSION} ..."
 
     cd ${BUILDROOT}
     cat PKGBUILD.in \
         | sed s/@PACKAGENAME@/${AURPACKAGENAME}/g \
         | sed s/@PACKAGEFLAG@/${AURPACKAGEFLAG}/g \
-        | sed s/@PACKAGEREL@/${VERSION}/g \
-        | sed s/@PACKAGEVER@/${DATE}/g \
+        | sed s/@PACKAGEREL@/${AURPACKAGEREL}/g \
+        | sed s/@PACKAGEVER@/${DATE}_${VERSION}/g \
         | sed s/@PACKAGEDEPS@/${AURPACKAGEDEPS}/g \
         | sed s/@PACKAGECONFIG@/${AURPACKAGECONFIG}/g \
         | sed s/@SOURCENAME@/${PACKAGENAME}${FLAG}_${DATE}/g \
@@ -55,25 +56,25 @@ function make_package
     rm -f "deadbeef-fb_${DATE}_src.tar.gz.part"
     makepkg --source -f || exit $?
     mkdir -p ${AURDIR}/package
-    mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${VERSION}.src.tar.gz ${AURDIR}/package/
+    mv -v ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}_${VERSION}.src.tar.gz ${AURDIR}/package/
 
     echo "=============================================================================="
-    echo "Testing AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE} v${VERSION} ..."
+    echo "Testing AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}_${VERSION} ..."
 
     rm -rf ${AURDIR}/test
     mkdir -p ${AURDIR}/test
     cd ${AURDIR}/test
-    tar -xzf ${AURDIR}/package/${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${VERSION}.src.tar.gz || exit $?
+    tar -xzf ${AURDIR}/package/${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}_${VERSION}.src.tar.gz || exit $?
     ls -l
     cd ${AURPACKAGENAME}${AURPACKAGEFLAG}
     echo "> $(pwd)"
     namcap PKGBUILD || exit $?
     makepkg -f || exit $?
-    namcap ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}-${VERSION}-any.pkg.tar.xz || exit $?
+    namcap ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}_${VERSION}-any.pkg.tar.xz || exit $?
     cd ${BUILDROOT}
 
     echo "=============================================================================="
-    echo "Updating AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE} v${VERSION} ..."
+    echo "Updating AUR package ${AURPACKAGENAME}${AURPACKAGEFLAG}-${DATE}_${VERSION} ..."
 
     cd ${AURDIR}
     if [ ! -d ${AURPACKAGENAME}${AURPACKAGEFLAG} ]; then
@@ -81,7 +82,7 @@ function make_package
         git clone ssh://aurssh/${AURPACKAGENAME}${AURPACKAGEFLAG}.git || exit $?
     fi
     cd ${AURPACKAGENAME}${AURPACKAGEFLAG}
-    git pull || exit $?
+    git pull
     cp -v ${BUILDROOT}/PKGBUILD ./PKGBUILD || exit $?
     namcap PKGBUILD || exit $?
     mksrcinfo || exit $?
@@ -90,13 +91,13 @@ function make_package
     git status
     echo ">>> Press CTRL+C to abort ..."
     sleep 5
-    git commit -a -m "release ${DATE}" || exit $?
+    git commit -a -m "release ${DATE}-${VERSION}" || exit $?
     echo "> Pushing commits ..."
-    git push || exit $? || exit $?
+    git push || exit $?
     cd ${BUILDROOT}
 
 }
 
-#            name                 flag    deps   config
-make_package "deadbeef-plugin-fb" ""      "gtk2" "--disable-gtk3"
-make_package "deadbeef-plugin-fb" "-gtk3" "gtk3" "--disable-gtk2"
+#            name                 flag    rel deps   config
+make_package "deadbeef-plugin-fb" ""      1   "gtk2" "--disable-gtk3"
+make_package "deadbeef-plugin-fb" "-gtk3" 1   "gtk3" "--disable-gtk2"
