@@ -1207,12 +1207,12 @@ create_sidebar (void)
     gtk_box_pack_start (GTK_BOX (sidebar), scrollwin, TRUE, TRUE, 1);
 
     // adjust tab-focus
-    GList *focus_list = NULL;
-    focus_list = g_list_append (focus_list, sidebar_searchbox);
-    focus_list = g_list_append (focus_list, sidebar_addressbox);
-    focus_list = g_list_append (focus_list, sidebar_toolbar);
-    gtk_container_set_focus_chain (GTK_CONTAINER (sidebar), focus_list);
-    g_list_free (focus_list);
+    /* GList *focus_list = NULL; */
+    /* focus_list = g_list_append (focus_list, sidebar_searchbox); */
+    /* focus_list = g_list_append (focus_list, sidebar_addressbox); */
+    /* focus_list = g_list_append (focus_list, sidebar_toolbar); */
+    /* gtk_container_set_focus_chain (GTK_CONTAINER (sidebar), focus_list); */
+    /* g_list_free (focus_list); */
 
     g_signal_connect (selection,    "changed",              G_CALLBACK (on_treeview_changed),               NULL);
     g_signal_connect (treeview,     "button-press-event",   G_CALLBACK (on_treeview_mouseclick_press),      selection);
