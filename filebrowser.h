@@ -178,6 +178,7 @@ static void         on_searchbar_changed (void);
 static void         on_searchbar_cleared (void);
 #endif
 
+static gboolean     on_treeview_key_press (GtkWidget *widget, GdkEventKey *event, GtkTreeSelection *selection);
 static gboolean     on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event, GtkTreeSelection *selection);
 static gboolean     on_treeview_mouseclick_release (GtkWidget *widget, GdkEventButton *event, GtkTreeSelection *selection);
 static gboolean     on_treeview_mousemove (GtkWidget *widget, GdkEventButton *event);

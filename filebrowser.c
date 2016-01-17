@@ -1218,7 +1218,7 @@ create_sidebar (void)
     g_signal_connect (treeview,     "button-press-event",   G_CALLBACK (on_treeview_mouseclick_press),      selection);
     g_signal_connect (treeview,     "button-release-event", G_CALLBACK (on_treeview_mouseclick_release),    selection);
     g_signal_connect (treeview,     "motion-notify-event",  G_CALLBACK (on_treeview_mousemove),             NULL);
-    //g_signal_connect (treeview,     "row-activated",        G_CALLBACK (on_treeview_row_activated),         NULL);
+    g_signal_connect (treeview,     "key-press-event",      G_CALLBACK (on_treeview_key_press),             selection);
     g_signal_connect (treeview,     "row-collapsed",        G_CALLBACK (on_treeview_row_collapsed),         NULL);
     g_signal_connect (treeview,     "row-expanded",         G_CALLBACK (on_treeview_row_expanded),          NULL);
     g_signal_connect (button_go,    "clicked",              G_CALLBACK (on_addressbar_changed),             NULL);
@@ -3068,6 +3068,49 @@ treeview_activate (GtkTreePath *path, GtkTreeViewColumn *column,
         _add_uri_to_playlist (uri_list, plt, plt_new, FALSE);
         deadbeef->sendmessage (DB_EV_PLAY_NUM, 0, 0, 0);
     }
+}
+
+static gboolean
+on_treeview_key_press (GtkWidget *widget, GdkEventKey *event,
+                GtkTreeSelection *selection)
+{
+    if (gtkui_plugin->w_get_design_mode ())
+    {
+        return FALSE;
+    }
+
+    GtkTreePath         *path;
+    GtkTreeViewColumn   *column;
+    gtk_tree_view_get_cursor (GTK_TREE_VIEW (treeview), &path, &column);
+
+    gboolean is_expanded = path ? gtk_tree_view_row_expanded (GTK_TREE_VIEW (treeview), path) : FALSE;
+
+    if (event->keyval == GDK_KEY_Return) {
+        treeview_activate(path, column, selection,
+            event->state & GDK_SHIFT_MASK,
+            event->state & GDK_CONTROL_MASK);
+        return TRUE;
+    }
+    else if (event->keyval == GDK_KEY_Left)
+    {
+        if (is_expanded)
+            gtk_tree_view_collapse_row (GTK_TREE_VIEW (treeview), path);
+        else if (gtk_tree_path_get_depth (path) > 1)
+            gtk_tree_path_up (path);
+        gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
+        return TRUE;
+    }
+    else if (event->keyval == GDK_KEY_Right)
+    {
+        if (! is_expanded)
+            gtk_tree_view_expand_row (GTK_TREE_VIEW (treeview), path, FALSE);
+        else
+            gtk_tree_path_down (path);
+        gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 static gboolean
