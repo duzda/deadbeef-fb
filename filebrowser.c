@@ -3092,6 +3092,8 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
     gboolean is_selected = path ? gtk_tree_selection_path_is_selected (selection, path) : FALSE;
     gboolean is_expanded = path ? gtk_tree_view_row_expanded (GTK_TREE_VIEW (treeview), path) : FALSE;
 
+    gtk_widget_grab_focus(treeview);
+
     if (event->button == 1)
     {
         if (! path)
