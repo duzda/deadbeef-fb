@@ -1911,7 +1911,7 @@ error:
 }
 
 static void
-add_uri_to_playlist (GList *uri_list, int index, int append)
+_add_uri_to_playlist (GList *uri_list, int index, int append, int threaded)
 {
     if (! uri_list)
         return;
@@ -1971,8 +1971,20 @@ add_uri_to_playlist (GList *uri_list, int index, int append)
 
     trace("starting thread for adding files to playlist\n");
 
-    intptr_t tid = deadbeef->thread_start (add_uri_to_playlist_worker, (void*)uri_list);
-    deadbeef->thread_detach (tid);
+    if (threaded)
+    {
+        intptr_t tid = deadbeef->thread_start (add_uri_to_playlist_worker, (void*)uri_list);
+        deadbeef->thread_detach (tid);
+    }
+    else {
+        add_uri_to_playlist_worker (uri_list);
+    }
+}
+
+static void
+add_uri_to_playlist (GList *uri_list, int index, int append)
+{
+    _add_uri_to_playlist (uri_list, index, append, TRUE);
 }
 
 /* Check if file is filtered by extension (return FALSE if not shown) */
@@ -3023,6 +3035,41 @@ on_searchbar_cleared ()
 /*-----------------*/
 
 
+static void
+treeview_activate (GtkTreePath *path, GtkTreeViewColumn *column,
+        GtkTreeSelection *selection, gboolean plt_new, gboolean silent)
+{
+    gint selected_rows = gtk_tree_selection_count_selected_rows (selection);
+    gboolean is_selected = path ? gtk_tree_selection_path_is_selected (selection, path) : FALSE;
+
+    if (path)
+    {
+        if (selected_rows < 1)
+            gtk_tree_selection_select_path (selection, path);
+        if (! is_selected)
+            gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
+    }
+
+    GList *rows, *uri_list;
+    uri_list = g_list_alloc ();
+    rows = gtk_tree_selection_get_selected_rows (selection, NULL);
+    g_list_foreach (rows, (GFunc)get_uris_from_selection, uri_list);
+    g_list_foreach (rows, (GFunc)gtk_tree_path_free, NULL);
+    g_list_free (rows);
+
+    gint plt = plt_new ? PLT_NEW : PLT_CURRENT;
+
+    if (silent)
+    {
+        add_uri_to_playlist (uri_list, plt, TRUE);
+    }
+    else
+    {
+        _add_uri_to_playlist (uri_list, plt, plt_new, FALSE);
+        deadbeef->sendmessage (DB_EV_PLAY_NUM, 0, 0, 0);
+    }
+}
+
 static gboolean
 on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
                 GtkTreeSelection *selection)
@@ -3054,8 +3101,7 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
         }
 
         // expand/collapse on double-click anywhere or single-click on icon/expander
-        if ( (event->type == GDK_BUTTON_PRESS && column == treeview_column_icon)
-                || (event->type == GDK_2BUTTON_PRESS) )
+        if (event->type == GDK_BUTTON_PRESS && column == treeview_column_icon)
         {
             // toggle expand/collapse
             if (is_expanded)
@@ -3063,6 +3109,11 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
             else
                 gtk_tree_view_expand_row (GTK_TREE_VIEW (treeview), path, FALSE);
             gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
+        }
+
+        if (event->type == GDK_2BUTTON_PRESS)
+        {
+            treeview_activate(path, column, selection, FALSE, FALSE);
         }
 
         if (event->type == GDK_BUTTON_PRESS)
@@ -3102,36 +3153,9 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
     }
     else if (event->button == 2)
     {
-        if (event->type == GDK_BUTTON_PRESS)
-        {
-            if (path)
-            {
-                if (selected_rows < 1)
-                    gtk_tree_selection_select_path (selection, path);
-                if (! is_selected)
-                    gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
-            }
-
-            GList *rows, *uri_list;
-            uri_list = g_list_alloc ();
-            rows = gtk_tree_selection_get_selected_rows (selection, NULL);
-            g_list_foreach (rows, (GFunc)get_uris_from_selection, uri_list);
-            g_list_foreach (rows, (GFunc)gtk_tree_path_free, NULL);
-            g_list_free (rows);
-
-            if (! (event->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)))
-            {
-                add_uri_to_playlist (uri_list, PLT_CURRENT, TRUE);  // append
-            }
-            else if (event->state & GDK_CONTROL_MASK)
-            {
-                add_uri_to_playlist (uri_list, PLT_CURRENT, FALSE);  // replace
-            }
-            else if (event->state & GDK_SHIFT_MASK)  // create
-            {
-                add_uri_to_playlist (uri_list, PLT_NEW, TRUE);
-            }
-        }
+        treeview_activate(path, column, selection,
+            event->state & GDK_SHIFT_MASK,
+            ! event->state & GDK_CONTROL_MASK);
     }
     else if (event->button == 3)
     {
