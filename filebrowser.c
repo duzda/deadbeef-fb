@@ -3704,7 +3704,7 @@ static DB_misc_t plugin =
        //0.........1.........2.........3.........4.........5.........6.........7.......::8
     ,
     .plugin.copyright       =
-        "Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>\n"
+        "Copyright (C) 2011-2016 Jan D. Behrens <zykure@web.de>\n"
         "\n"
         "Contributions by:\n"
         "  Tobias Bengfort <tobias.bengfort@posteo.de>\n"

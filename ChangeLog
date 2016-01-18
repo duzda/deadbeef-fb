@@ -1,3 +1,58 @@
+commit ee572932cbca1a971e51c08b4b9e4e552e82e990
+Merge: 39192b3 0e65da7
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Jan 18 23:37:30 2016 +0100
+
+    Merge branch 'ximm/deadbeef-fb-feature-advanced-controls'
+
+commit 0e65da74e990ec1d459817e80d4c8328a98c9c02
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Jan 18 23:30:06 2016 +0100
+
+    Rework some of the new code, change some keybindings, update help text
+
+commit d26a6f8ca800cbb097a3e02c4c04235fe756b8b9
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Jan 18 22:34:57 2016 +0100
+
+    fix errors/warnings
+
+commit b8b37792d00f4d0147477a66b57ebd8f9eac9308
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Sun Jan 17 20:39:17 2016 +0100
+
+    add keyboard controls
+
+commit d1b14f13150d3632cf3d00cfada5d0a4a70016a3
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Sun Jan 17 21:58:06 2016 +0100
+
+    grab focus on click
+
+commit 3d7654aef97a2054c133188e1e4838998616fc9e
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Sun Jan 17 20:38:54 2016 +0100
+
+    activate on double click
+
+commit 70798bd82db91ec283061f3b37c98b3248f89a63
+Author: Tobias Bengfort <tobias.bengfort@gmx.net>
+Date:   Sun Jan 17 20:32:26 2016 +0100
+
+    Fix keyboard navigation
+
+commit 39192b39dfbb6bae0b483a614d5b6d8af3871479
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Jan 6 21:05:08 2016 +0100
+
+    Fix those damn build scripts again
+
+commit c2afbbe5a32d1fa997b20b962eacb012bc1b93a2
+Author: Jan Behrens <zykure@web.de>
+Date:   Wed Jan 6 20:40:58 2016 +0100
+
+    Fix build scripts; bump version
+
 commit f3a904e91bace65f35ba87d849c1cd00ec7f15aa
 Merge: 4c56899 e652321
 Author: zykure <zykure42@gmail.com>
