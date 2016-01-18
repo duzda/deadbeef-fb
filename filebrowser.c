@@ -55,6 +55,7 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
+#include <gdk/gdkkeysyms.h>
 #include <gio/gio.h>
 
 #include <deadbeef/deadbeef.h>
@@ -1976,7 +1977,8 @@ _add_uri_to_playlist (GList *uri_list, int index, int append, int threaded)
         intptr_t tid = deadbeef->thread_start (add_uri_to_playlist_worker, (void*)uri_list);
         deadbeef->thread_detach (tid);
     }
-    else {
+    else
+    {
         add_uri_to_playlist_worker (uri_list);
     }
 }
@@ -3085,7 +3087,8 @@ on_treeview_key_press (GtkWidget *widget, GdkEventKey *event,
 
     gboolean is_expanded = path ? gtk_tree_view_row_expanded (GTK_TREE_VIEW (treeview), path) : FALSE;
 
-    if (event->keyval == GDK_KEY_Return) {
+    if (event->keyval == GDK_KEY_Return)
+    {
         treeview_activate(path, column, selection,
             event->state & GDK_SHIFT_MASK,
             event->state & GDK_CONTROL_MASK);
@@ -3200,7 +3203,7 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
     {
         treeview_activate(path, column, selection,
             event->state & GDK_SHIFT_MASK,
-            ! event->state & GDK_CONTROL_MASK);
+            ! (event->state & GDK_CONTROL_MASK));
     }
     else if (event->button == 3)
     {
