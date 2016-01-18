@@ -123,7 +123,7 @@ static void         create_settings_dialog (void);
 
 //static void         add_single_uri_to_playlist (gchar *uri, int plt);
 static void         add_uri_to_playlist_worker (void *data);
-static void         add_uri_to_playlist (GList *uri_list, int plt, int append);
+static void         add_uri_to_playlist (GList *uri_list, int plt, int append, int threaded);
 
 static gboolean     check_filtered (const gchar *base_name);
 static gboolean     check_hidden (const gchar *filename);
@@ -178,6 +178,8 @@ static void         on_searchbar_changed (void);
 static void         on_searchbar_cleared (void);
 #endif
 
+static void         treeview_activate (GtkTreePath *path, GtkTreeViewColumn *column, GtkTreeSelection *selection,
+                    gboolean create, gboolean append, gboolean play);
 static gboolean     on_treeview_key_press (GtkWidget *widget, GdkEventKey *event, GtkTreeSelection *selection);
 static gboolean     on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event, GtkTreeSelection *selection);
 static gboolean     on_treeview_mouseclick_release (GtkWidget *widget, GdkEventButton *event, GtkTreeSelection *selection);

@@ -1912,7 +1912,7 @@ error:
 }
 
 static void
-_add_uri_to_playlist (GList *uri_list, int index, int append, int threaded)
+add_uri_to_playlist (GList *uri_list, int index, int append, int threaded)
 {
     if (! uri_list)
         return;
@@ -1981,12 +1981,6 @@ _add_uri_to_playlist (GList *uri_list, int index, int append, int threaded)
     {
         add_uri_to_playlist_worker (uri_list);
     }
-}
-
-static void
-add_uri_to_playlist (GList *uri_list, int index, int append)
-{
-    _add_uri_to_playlist (uri_list, index, append, TRUE);
 }
 
 /* Check if file is filtered by extension (return FALSE if not shown) */
@@ -2696,25 +2690,25 @@ on_menu_add (GtkMenuItem *menuitem, GList *uri_list)
         g_strfreev (slabel);
     }
 
-    add_uri_to_playlist (uri_list, plt, TRUE);
+    add_uri_to_playlist (uri_list, plt, TRUE, TRUE);  // append
 }
 
 static void
 on_menu_add_current (GtkMenuItem *menuitem, GList *uri_list)
 {
-    add_uri_to_playlist (uri_list, PLT_CURRENT, TRUE);  // append
+    add_uri_to_playlist (uri_list, PLT_CURRENT, TRUE, TRUE);  // append
 }
 
 static void
 on_menu_replace_current (GtkMenuItem *menuitem, GList *uri_list)
 {
-    add_uri_to_playlist (uri_list, PLT_CURRENT, FALSE);  // replace
+    add_uri_to_playlist (uri_list, PLT_CURRENT, FALSE, TRUE);  // replace
 }
 
 static void
 on_menu_add_new (GtkMenuItem *menuitem, GList *uri_list)
 {
-    add_uri_to_playlist (uri_list, PLT_NEW, TRUE);
+    add_uri_to_playlist (uri_list, PLT_NEW, TRUE, TRUE);
 }
 
 static void
@@ -2896,7 +2890,7 @@ on_button_add_current (void)
     g_list_foreach (rows, (GFunc) gtk_tree_path_free, NULL);
     g_list_free (rows);
 
-    add_uri_to_playlist (uri_list, PLT_CURRENT, TRUE);  // append
+    add_uri_to_playlist (uri_list, PLT_CURRENT, TRUE, TRUE);  // append
 }
 
 static void
@@ -2914,7 +2908,7 @@ on_button_replace_current (void)
     g_list_foreach (rows, (GFunc) gtk_tree_path_free, NULL);
     g_list_free (rows);
 
-    add_uri_to_playlist (uri_list, PLT_CURRENT, FALSE);  // replace
+    add_uri_to_playlist (uri_list, PLT_CURRENT, FALSE, TRUE);  // replace
 }
 
 static void
@@ -3039,7 +3033,7 @@ on_searchbar_cleared ()
 
 static void
 treeview_activate (GtkTreePath *path, GtkTreeViewColumn *column,
-        GtkTreeSelection *selection, gboolean plt_new, gboolean silent)
+GtkTreeSelection *selection, gboolean create, gboolean append, gboolean play)
 {
     gint selected_rows = gtk_tree_selection_count_selected_rows (selection);
     gboolean is_selected = path ? gtk_tree_selection_path_is_selected (selection, path) : FALSE;
@@ -3059,15 +3053,15 @@ treeview_activate (GtkTreePath *path, GtkTreeViewColumn *column,
     g_list_foreach (rows, (GFunc)gtk_tree_path_free, NULL);
     g_list_free (rows);
 
-    gint plt = plt_new ? PLT_NEW : PLT_CURRENT;
+    gint plt = create ? PLT_NEW : PLT_CURRENT;
 
-    if (silent)
+    if (! play)
     {
-        add_uri_to_playlist (uri_list, plt, TRUE);
+        add_uri_to_playlist (uri_list, plt, append, TRUE);  // append
     }
     else
     {
-        _add_uri_to_playlist (uri_list, plt, plt_new, FALSE);
+        add_uri_to_playlist (uri_list, plt, FALSE, FALSE);  // append/replace - no threads here!
         deadbeef->sendmessage (DB_EV_PLAY_NUM, 0, 0, 0);
     }
 }
@@ -3090,8 +3084,9 @@ on_treeview_key_press (GtkWidget *widget, GdkEventKey *event,
     if (event->keyval == GDK_KEY_Return)
     {
         treeview_activate(path, column, selection,
-            event->state & GDK_SHIFT_MASK,
-            event->state & GDK_CONTROL_MASK);
+            (event->state & GDK_SHIFT_MASK),  // shift=create
+            FALSE,  // always replace
+            ! (event->state & GDK_CONTROL_MASK));  // ctrl=silent
         return TRUE;
     }
     else if (event->keyval == GDK_KEY_Left)
@@ -3148,7 +3143,7 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
             return TRUE;
         }
 
-        // expand/collapse on double-click anywhere or single-click on icon/expander
+        // expand/collapse by single-click on icon/expander
         if (event->type == GDK_BUTTON_PRESS && column == treeview_column_icon)
         {
             // toggle expand/collapse
@@ -3158,13 +3153,15 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
                 gtk_tree_view_expand_row (GTK_TREE_VIEW (treeview), path, FALSE);
             gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
         }
-
-        if (event->type == GDK_2BUTTON_PRESS)
+        // add items by double-click on item
+        else if (event->type == GDK_2BUTTON_PRESS)
         {
-            treeview_activate(path, column, selection, FALSE, FALSE);
+            treeview_activate(path, column, selection,
+                FALSE, FALSE,  // replace current
+                ! (event->state & GDK_CONTROL_MASK));  // ctrl=silent
         }
-
-        if (event->type == GDK_BUTTON_PRESS)
+        // select + drag/drop by click on item
+        else if (event->type == GDK_BUTTON_PRESS)
         {
             mouseclick_dragwait = TRUE;
             if (! (event->state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK)))
@@ -3202,11 +3199,13 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
     else if (event->button == 2)
     {
         treeview_activate(path, column, selection,
-            event->state & GDK_SHIFT_MASK,
-            ! (event->state & GDK_CONTROL_MASK));
+            (event->state & GDK_SHIFT_MASK),  // shift=create
+            TRUE,  // always append
+            (event->state & GDK_CONTROL_MASK));  // ctrl=play
     }
     else if (event->button == 3)
     {
+        // show popup menu by right-click
         if (event->type == GDK_BUTTON_PRESS)
         {
             if (path)
@@ -3689,10 +3688,21 @@ static DB_misc_t plugin =
         "\t* left-click to select (drag&drop to add to playlist)\n"
         "\t\t* ctrl + left-click to multi-select\n"
         "\t\t* shift + left-click to range-select (only works on same tree level)\n"
-        "\t* middle-click to append to current playlist\n"
-        "\t\t* ctrl + middle-click to replace current playlist\n"
+        "\t* middle-click to replace append to playlist\n"
+        "\t\t* ctrl + middle-click to replace current playlist & start playing\n"
         "\t\t* shift + middle-click to create new playlist\n"
+        "\t\t* ctrl + shift + middle-click to create new playlist & start playing\n"
         "\t* right-click for popup menu\n"
+        "\t* double-click to replace current playlist & start playing\n"
+        "\t\t* ctrl + double-click to replace current playlist\n"
+        "\n"
+        "KEYPRESS ACTIONS:\n"
+        "It is also possible to execute key-press actions inside the tree view:\n"
+        "\t* left/right to navigate along tree hierarchy (move & expand/collapse)\n"
+        "\t* return to replace current playlist & start playing\n"
+        "\t\t* ctrl + return to replace current playlist\n"
+        "\t\t* shift + return to create new playlist & start playing\n"
+
        //0.........1.........2.........3.........4.........5.........6.........7.......::8
     ,
     .plugin.copyright       =
