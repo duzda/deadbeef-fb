@@ -51,6 +51,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
@@ -70,7 +71,7 @@
 #define TOSTRING(x) STRINGIFY(x)
 #define trace(...) { fprintf (stderr, "filebrowser[" __FILE__ ":" TOSTRING(__LINE__) "] " __VA_ARGS__); }
 #else
-#define trace(fmt,...)
+#define trace(...)
 #endif
 
 
@@ -961,6 +962,14 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_copy_uri), uri_list);
     gtk_widget_set_sensitive (item, is_exists);
 
+#if GTK_CHECK_VERSION(3,16,0)
+    // new rename dialog (uses GTK3)
+    item = gtk_menu_item_new_with_mnemonic (_("Rena_me file or directory"));
+    gtk_container_add (GTK_CONTAINER (menu), item);
+    g_signal_connect (item, "activate", G_CALLBACK (on_menu_rename), uri_list);
+    gtk_widget_set_sensitive (item, is_exists && (num_items == 1));  // can only rename one file at once
+#endif
+
     item = gtk_separator_menu_item_new ();
     gtk_container_add (GTK_CONTAINER (menu), item);
 
@@ -1021,7 +1030,7 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_hide_toolbar), NULL);
 
 #if GTK_CHECK_VERSION(3,16,0)
-    // new settings dialog
+    // new settings dialog (uses GTK3)
     item = gtk_separator_menu_item_new ();
     gtk_container_add (GTK_CONTAINER (menu), item);
 
@@ -1288,7 +1297,8 @@ on_settings_path_add (GtkButton *button, gpointer grid)
     gchar *dirname;
 
     dialog = gtk_file_chooser_dialog_new (
-                "Add Directory", GTK_WINDOW (gtkui_plugin->get_mainwin ()),
+                "Add Directory",
+                GTK_WINDOW (gtkui_plugin->get_mainwin ()),
                 GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
                 _("_Cancel"), GTK_RESPONSE_CANCEL,
                 _("_Open"), GTK_RESPONSE_ACCEPT,
@@ -2858,6 +2868,101 @@ on_menu_hide_toolbar (GtkMenuItem *menuitem, gpointer *user_data)
     else
         gtk_widget_show (sidebar_toolbar);
 }
+
+#if GTK_CHECK_VERSION(3,16,0)
+static void
+on_menu_rename (GtkMenuItem *menuitem, GList *uri_list)
+{
+    if (! uri_list)
+        return;
+
+    gchar *source_uri = uri_list->next->data;  // use only first item
+    gboolean is_dir = g_file_test (source_uri, G_FILE_TEST_IS_DIR);
+
+    gchar *path   = g_path_get_dirname (source_uri);
+    gchar *source = g_path_get_basename (source_uri);
+
+    GtkWidget *dialog = gtk_dialog_new_with_buttons (
+            is_dir ? _("Rename directory") : _("Rename file"),
+            GTK_WINDOW (gtkui_plugin->get_mainwin ()),
+            GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+            _("_Cancel"), GTK_RESPONSE_CANCEL,
+            _("_OK"), GTK_RESPONSE_OK,
+            NULL);
+
+    GtkWidget *content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+
+    GtkWidget *grid         = gtk_grid_new ();
+    GtkWidget *lbl_source   = gtk_label_new (_("Source:"));
+    GtkWidget *lbl_target   = gtk_label_new (_("Target:"));
+    GtkWidget *entry_source = gtk_entry_new ();
+    GtkWidget *entry_target = gtk_entry_new ();
+
+    gtk_widget_set_margin_start (lbl_source, 40);
+    gtk_widget_set_margin_start (lbl_target, 40);
+    gtk_widget_set_hexpand (entry_source, TRUE);
+    gtk_widget_set_hexpand (entry_target, TRUE);
+
+    gtk_grid_attach (GTK_GRID (grid), lbl_source,   0, 0, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid), entry_source, 1, 0, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid), lbl_target,   0, 1, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid), entry_target, 1, 1, 1, 1);
+
+    gtk_grid_set_row_spacing (GTK_GRID (grid), 2);
+
+    gtk_widget_set_size_request (lbl_source, 100, -1);
+    gtk_widget_set_size_request (lbl_target, 100, -1);
+
+    gtk_label_set_xalign (GTK_LABEL (lbl_source), 0.);
+    gtk_label_set_xalign (GTK_LABEL (lbl_target), 0.);
+
+    gtk_container_set_border_width (GTK_CONTAINER (grid), 8);
+    gtk_box_pack_start (GTK_BOX (content), grid, TRUE, TRUE, 0);
+
+    gtk_entry_set_text (GTK_ENTRY (entry_source), source);
+    gtk_entry_set_text (GTK_ENTRY (entry_target), source);
+
+    gtk_widget_set_sensitive (GTK_WIDGET (entry_source), FALSE);  // read-only
+
+    gtk_widget_show_all (dialog);
+
+    if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK)
+    {
+        gchar *target = g_path_get_basename (gtk_entry_get_text (GTK_ENTRY (entry_target)));
+        gchar *target_uri = g_build_filename (path, target, NULL);
+
+        trace("rename %s -> %s", source_uri, target_uri);
+        gint success = g_rename (source_uri, target_uri);
+
+        if (success != 0)
+        {
+            GtkWidget *error = gtk_message_dialog_new (
+                    GTK_WINDOW (gtkui_plugin->get_mainwin ()),
+                    GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_CLOSE,
+                    _("Failed to rename %s!\n\n%s\n\t==>\n%s"),
+                    is_dir ? _("directory") : _("file"),
+                    source_uri, target_uri);
+
+            gtk_dialog_run (GTK_DIALOG (error));
+            gtk_widget_destroy (error);
+        }
+        else
+        {
+            treebrowser_chroot (addressbar_last_address);  // update treeview
+        }
+
+        g_free (target_uri);
+        g_free (target);
+    }
+
+    g_free (source);
+    g_free (path);
+
+    gtk_widget_destroy (dialog);
+}
+#endif
 
 #if GTK_CHECK_VERSION(3,16,0)
 static void

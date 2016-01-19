@@ -163,6 +163,7 @@ static void         on_menu_hide_navigation (GtkMenuItem *menuitem, gpointer *us
 static void         on_menu_hide_search (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_hide_toolbar (GtkMenuItem *menuitem, gpointer *user_data);
 #if GTK_CHECK_VERSION(3,16,0)
+static void         on_menu_rename (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_config (GtkMenuItem *menuitem, gpointer user_data);
 #endif
 
