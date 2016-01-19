@@ -1338,7 +1338,6 @@ settings_get_paths(GtkGrid *grid)
     paths = NULL;
 
     int numrows = gtk_grid_get_number_of_rows (GTK_GRID (grid), 0);  // get rows with labels
-    trace("%d rows\n",numrows);
     for (int row = 0; row < numrows; row++)
     {
         label = gtk_grid_get_child_at (grid, 0, row);
@@ -1346,7 +1345,6 @@ settings_get_paths(GtkGrid *grid)
             break;
 
         dirname = gtk_label_get_text (GTK_LABEL (label));
-        trace("%d: %s\n",row,dirname);
 
         if (paths == NULL)
             paths = g_strdup (dirname);
@@ -2931,7 +2929,7 @@ on_menu_rename (GtkMenuItem *menuitem, GList *uri_list)
         gchar *target = g_path_get_basename (gtk_entry_get_text (GTK_ENTRY (entry_target)));
         gchar *target_uri = g_build_filename (path, target, NULL);
 
-        trace("rename %s -> %s", source_uri, target_uri);
+        trace("rename %s -> %s\n", source_uri, target_uri);
         gint success = g_rename (source_uri, target_uri);
 
         if (success != 0)
@@ -3190,6 +3188,7 @@ on_treeview_key_press (GtkWidget *widget, GdkEventKey *event,
             (event->state & GDK_SHIFT_MASK),  // shift=create
             FALSE,  // always replace
             ! (event->state & GDK_CONTROL_MASK));  // ctrl=silent
+
         return TRUE;
     }
     else if (event->keyval == GDK_KEY_Left)
@@ -3199,6 +3198,7 @@ on_treeview_key_press (GtkWidget *widget, GdkEventKey *event,
         else if (gtk_tree_path_get_depth (path) > 1)
             gtk_tree_path_up (path);
         gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
+
         return TRUE;
     }
     else if (event->keyval == GDK_KEY_Right)
@@ -3208,6 +3208,7 @@ on_treeview_key_press (GtkWidget *widget, GdkEventKey *event,
         else
             gtk_tree_path_down (path);
         gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
+
         return TRUE;
     }
 
@@ -3232,6 +3233,8 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
     mouseclick_lastpos[1] = event->y;
     mouseclick_dragwait = FALSE;
 
+    gtk_tree_selection_set_mode (selection, GTK_SELECTION_MULTIPLE);
+
     gint selected_rows = gtk_tree_selection_count_selected_rows (selection);
     gboolean is_selected = path ? gtk_tree_selection_path_is_selected (selection, path) : FALSE;
     gboolean is_expanded = path ? gtk_tree_view_row_expanded (GTK_TREE_VIEW (treeview), path) : FALSE;
@@ -3243,6 +3246,7 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
         if (! path)
         {
             gtk_tree_selection_unselect_all (selection);
+
             return TRUE;
         }
 
@@ -3255,13 +3259,19 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
             else
                 gtk_tree_view_expand_row (GTK_TREE_VIEW (treeview), path, FALSE);
             gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
+
+            return TRUE;
         }
         // add items by double-click on item
         else if (event->type == GDK_2BUTTON_PRESS)
         {
+            gtk_tree_selection_select_path (selection, path);
+
             treeview_activate(path, column, selection,
                 FALSE, FALSE,  // replace current
-                ! (event->state & GDK_CONTROL_MASK));  // ctrl=silent
+                TRUE);  // play
+
+            return TRUE;
         }
         // select + drag/drop by click on item
         else if (event->type == GDK_BUTTON_PRESS)
@@ -3274,6 +3284,8 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
                     // select row
                     gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
                 }
+
+                return TRUE;
             }
             else if (event->state & GDK_SHIFT_MASK)
             {
@@ -3288,14 +3300,19 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
                         gtk_tree_selection_select_range (selection, mouseclick_lastpath, path);
                     }
                 }
+
+                return TRUE;
             }
             else if (event->state & GDK_CONTROL_MASK)
             {
+                trace("mouse_press[ctrl]: is_selected=%d\n", is_selected);
                 // toggle selection
                 if (is_selected)
                     gtk_tree_selection_unselect_path (selection, path);
                 else
                     gtk_tree_selection_select_path (selection, path);
+
+                return TRUE;
             }
         }
     }
@@ -3305,6 +3322,8 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
             (event->state & GDK_SHIFT_MASK),  // shift=create
             TRUE,  // always append
             (event->state & GDK_CONTROL_MASK));  // ctrl=play
+
+        return TRUE;
     }
     else if (event->button == 3)
     {
@@ -3332,10 +3351,12 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
             // create new accel group to avoid conflicts with main window
             gtk_menu_set_accel_group (GTK_MENU (menu), gtk_accel_group_new ());
             gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, event->button, event->time);
+
+            return TRUE;
         }
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 static gboolean
@@ -3360,6 +3381,7 @@ on_treeview_mouseclick_release (GtkWidget *widget, GdkEventButton *event,
         {
             mouseclick_lastpath = NULL;
             gtk_tree_selection_unselect_all (selection);
+
             return TRUE;
         }
 
@@ -3370,13 +3392,15 @@ on_treeview_mouseclick_release (GtkWidget *widget, GdkEventButton *event,
             {
                 // select row (abort drag)
                 gtk_tree_view_set_cursor (GTK_TREE_VIEW (treeview), path, column, FALSE);
+
+                return TRUE;
             }
         }
 
         mouseclick_lastpath = path;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 static gboolean
