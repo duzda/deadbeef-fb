@@ -275,22 +275,22 @@ utils_construct_style (GtkWidget *widget, const gchar *bgcolor, const gchar *fgc
     style = g_string_append (style, "widget \"*.deadbeef_filebrowser_treeview\" style \"deadbeef-filebrowser\" \n");
 #else
     style = g_string_append (style, "GtkTreeView { \n");
-    style = g_string_append (style, "    background-image: none; \n");
+    style = g_string_append (style, "    background: none; \n");
     style = g_string_append (style, "    border-width: 0px; \n");
+    style = g_string_append (style, "} \n");
+
+    style = g_string_append (style, "GtkTreeView row { \n");
     if (strlen(bgcolor) > 0)       g_string_append_printf (style, "    background-color: %s; \n", bgcolor);
     if (strlen(fgcolor) > 0)       g_string_append_printf (style, "    color:            %s; \n", fgcolor);
     style = g_string_append (style, "} \n");
 
-    style = g_string_append (style, "GtkTreeView :selected, \n");
-    style = g_string_append (style, "GtkTreeView :active { \n");
+    style = g_string_append (style, "GtkTreeView row:selected, \n");
+    style = g_string_append (style, "GtkTreeView row:active { \n");
     if (strlen(bgcolor_sel) > 0)   g_string_append_printf (style, "    background-color: %s; \n", bgcolor_sel);
     if (strlen(fgcolor_sel) > 0)   g_string_append_printf (style, "    color:            %s; \n", fgcolor_sel);
     style = g_string_append (style, "} \n");
 #endif
-
     gchar* style_str = g_string_free (style, FALSE);
-
-    printf("apply GTK style:\n%s\n", style_str);
 
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_rc_parse_string (style_str);
