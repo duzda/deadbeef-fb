@@ -274,15 +274,15 @@ utils_construct_style (GtkWidget *widget, const gchar *bgcolor, const gchar *fgc
     style = g_string_append (style, "} \n");
     style = g_string_append (style, "widget \"*.deadbeef_filebrowser_treeview\" style \"deadbeef-filebrowser\" \n");
 #else
-    style = g_string_append (style, "* { \n");
+    style = g_string_append (style, "GtkTreeView { \n");
+    style = g_string_append (style, "    background-image: none; \n");
+    style = g_string_append (style, "    border-width: 0px; \n");
     if (strlen(bgcolor) > 0)       g_string_append_printf (style, "    background-color: %s; \n", bgcolor);
     if (strlen(fgcolor) > 0)       g_string_append_printf (style, "    color:            %s; \n", fgcolor);
     style = g_string_append (style, "} \n");
-    style = g_string_append (style, "*:selected { \n");
-    if (strlen(bgcolor_sel) > 0)   g_string_append_printf (style, "    background-color: %s; \n", bgcolor_sel);
-    if (strlen(fgcolor_sel) > 0)   g_string_append_printf (style, "    color:            %s; \n", fgcolor_sel);
-    style = g_string_append (style, "} \n");
-    style = g_string_append (style, "*:active { \n");
+
+    style = g_string_append (style, "GtkTreeView :selected, \n");
+    style = g_string_append (style, "GtkTreeView :active { \n");
     if (strlen(bgcolor_sel) > 0)   g_string_append_printf (style, "    background-color: %s; \n", bgcolor_sel);
     if (strlen(fgcolor_sel) > 0)   g_string_append_printf (style, "    color:            %s; \n", fgcolor_sel);
     style = g_string_append (style, "} \n");
@@ -290,13 +290,16 @@ utils_construct_style (GtkWidget *widget, const gchar *bgcolor, const gchar *fgc
 
     gchar* style_str = g_string_free (style, FALSE);
 
+    printf("apply GTK style:\n%s\n", style_str);
+
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_rc_parse_string (style_str);
 #else
-    GtkCssProvider *css_provider = gtk_css_provider_get_default ();  // do NOT free!
+    GtkCssProvider *css_provider = gtk_css_provider_new ();
     gtk_css_provider_load_from_data (css_provider, style_str, -1, NULL);
     GtkStyleContext *style_ctx = gtk_widget_get_style_context (widget);  // do NOT free!
-    gtk_style_context_add_provider (style_ctx, (GtkStyleProvider *) css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    gtk_style_context_add_provider (style_ctx, GTK_STYLE_PROVIDER (css_provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref (css_provider);
 #endif
     g_free (style_str);
 }
