@@ -28,6 +28,7 @@ echo "Building binary release for ${PACKAGENAME}${FLAG}-${DATE}_${VERSION} ..."
 cd ${BUILDROOT}
 rm -rf ${INSTALLDIR}
 mkdir -p ${INSTALLDIR}/${PACKAGENAME}
+./configure
 make DESTDIR=${INSTALLDIR} install
 libtool --finish ${INSTALLDIR}/${PACKAGENAME}
 if [ -d ${INSTALLDIR} ]; then

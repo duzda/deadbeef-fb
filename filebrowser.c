@@ -1313,7 +1313,9 @@ on_settings_path_add (GtkButton *button, gpointer grid)
         gtk_grid_insert_row (GTK_GRID (grid), row);
 
         label = gtk_label_new (dirname);
+#if GTK_CHECK_VERSION(3,16,0)
         gtk_label_set_xalign (GTK_LABEL (label), 0.);
+#endif
         gtk_grid_attach (GTK_GRID (grid), label, 0, row, 1, 1);
         gtk_widget_set_hexpand (label, TRUE);
 
@@ -1380,7 +1382,9 @@ settings_update_paths (GtkGrid *grid, gchar *config_paths)
             continue;
 
         label = gtk_label_new (path_list[row]);
+#if GTK_CHECK_VERSION(3,16,0)
         gtk_label_set_xalign (GTK_LABEL (label), 0.);
+#endif
         gtk_grid_attach (grid, label, 0, row, 1, 1);
         gtk_widget_set_hexpand (label, TRUE);
 
@@ -1573,6 +1577,7 @@ create_settings_dialog ()
     gtk_widget_set_size_request (button_color_bg_sel,    50,    -1);
     gtk_widget_set_size_request (button_color_fg_sel,    50,    -1);
 
+#if GTK_CHECK_VERSION(3,16,0)
     gtk_label_set_xalign (GTK_LABEL (lbl_search_delay),     0.);
     gtk_label_set_xalign (GTK_LABEL (lbl_fullsearch_wait),  0.);
     gtk_label_set_xalign (GTK_LABEL (lbl_filter),           0.);
@@ -1585,7 +1590,7 @@ create_settings_dialog ()
     gtk_label_set_xalign (GTK_LABEL (lbl_color_fg),         0.);
     gtk_label_set_xalign (GTK_LABEL (lbl_color_bg_sel),     0.);
     gtk_label_set_xalign (GTK_LABEL (lbl_color_fg_sel),     0.);
-
+#endif
 
     gtk_radio_button_join_group (GTK_RADIO_BUTTON (radio_filter_custom), GTK_RADIO_BUTTON (radio_filter_auto));
 
@@ -2911,8 +2916,10 @@ on_menu_rename (GtkMenuItem *menuitem, GList *uri_list)
     gtk_widget_set_size_request (lbl_source, 100, -1);
     gtk_widget_set_size_request (lbl_target, 100, -1);
 
+#if GTK_CHECK_VERSION(3,16,0)
     gtk_label_set_xalign (GTK_LABEL (lbl_source), 0.);
     gtk_label_set_xalign (GTK_LABEL (lbl_target), 0.);
+#endif
 
     gtk_container_set_border_width (GTK_CONTAINER (grid), 8);
     gtk_box_pack_start (GTK_BOX (content), grid, TRUE, TRUE, 0);
