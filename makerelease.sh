@@ -28,9 +28,11 @@ echo "Building binary release for ${PACKAGENAME}${FLAG}-${DATE}_${VERSION} ..."
 cd ${BUILDROOT}
 rm -rf ${INSTALLDIR}
 mkdir -p ${INSTALLDIR}/${PACKAGENAME}
+
 ./configure
 make DESTDIR=${INSTALLDIR} install
 libtool --finish ${INSTALLDIR}/${PACKAGENAME}
+
 if [ -d ${INSTALLDIR} ]; then
     cd ${INSTALLDIR}
     for file in ./usr/local/lib/deadbeef/*.so.0.0.0; do
@@ -73,5 +75,6 @@ echo ">>> Press CTRL+C to abort ..."
 sleep 5
 git commit -a -m "release ${DATE}" || exit $?
 echo "> Pushing commits ..."
+git pull || exit $?
 git push || exit $?
 cd ${BUILDROOT}

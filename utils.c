@@ -259,6 +259,8 @@ utils_construct_style (GtkWidget *widget, const gchar *bgcolor, const gchar *fgc
     GString *style = g_string_new ("");
 #if !GTK_CHECK_VERSION(3,0,0)
     style = g_string_append (style, "style \"deadbeef-filebrowser\" { \n");
+    if (strlen(bgcolor) > 0)       g_string_append_printf (style, "    GtkTreeView::even-row-color = \"%s\" \n", bgcolor);
+    if (strlen(bgcolor) > 0)       g_string_append_printf (style, "    GtkTreeView::odd-row-color = \"%s\" \n", bgcolor);
     if (strlen(bgcolor) > 0)       g_string_append_printf (style, "    base[NORMAL]   = \"%s\" \n", bgcolor);
     if (strlen(bgcolor_sel) > 0)   g_string_append_printf (style, "    base[SELECTED] = \"%s\" \n", bgcolor_sel);
     if (strlen(bgcolor_sel) > 0)   g_string_append_printf (style, "    base[ACTIVE]   = \"%s\" \n", bgcolor_sel);
