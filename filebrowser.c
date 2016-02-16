@@ -34,15 +34,6 @@
  *      CONFIG_SHOW_BOOKMARKS       -> Show/hide all bookmarks
  *      CONFIG_SHOW_BOOKMARKS_GTK   -> Enable/disable showing GTK bookmarks
  *      CONFIG_SHOW_BOOKMARKS_FILE  -> Enable/disable showing user bookmarks
- *
- *      Merge icon & coverart sections
- *      CONFIG_SHOW_ICONS           -> Show/hide all icons
- *      CONFIG_SHOW_COVERART        -> Enable/disable showing coverart icons
- *
- *   Look & Feel:
- *      CONFIG_EXPAND_1CLICK        -> Expand tree items by single-click on expander
- *      CONFIG_EXPAND_2CLICK        -> Expand tree items by double-click on row
- *
  */
 
 #include <sys/types.h>
@@ -97,6 +88,7 @@ static const gchar *        CONFIG_BOOKMARKS_FILE       = NULL;
 static gboolean             CONFIG_SHOW_ICONS           = TRUE;
 static gboolean             CONFIG_SHOW_TREE_LINES      = FALSE;
 static gint                 CONFIG_WIDTH                = 220;
+static gboolean             CONFIG_SHOW_COVERART        = TRUE;
 static const gchar *        CONFIG_COVERART             = NULL;
 static gint                 CONFIG_COVERART_SIZE        = 24;
 static gboolean             CONFIG_COVERART_SCALE       = TRUE;
@@ -244,6 +236,7 @@ save_config (void)
     deadbeef->conf_set_int (CONFSTR_FB_SHOW_ICONS,          CONFIG_SHOW_ICONS);
     deadbeef->conf_set_int (CONFSTR_FB_SHOW_TREE_LINES,     CONFIG_SHOW_TREE_LINES);
     deadbeef->conf_set_int (CONFSTR_FB_WIDTH,               CONFIG_WIDTH);
+    deadbeef->conf_set_int (CONFSTR_FB_SHOW_COVERART,       CONFIG_SHOW_COVERART);
     deadbeef->conf_set_int (CONFSTR_FB_COVERART_SIZE,       CONFIG_COVERART_SIZE);
     deadbeef->conf_set_int (CONFSTR_FB_COVERART_SCALE,      CONFIG_COVERART_SCALE);
     deadbeef->conf_set_int (CONFSTR_FB_SAVE_TREEVIEW,       CONFIG_SAVE_TREEVIEW);
@@ -333,6 +326,7 @@ load_config (void)
     CONFIG_SHOW_ICONS           = deadbeef->conf_get_int (CONFSTR_FB_SHOW_ICONS,          TRUE);
     CONFIG_SHOW_TREE_LINES      = deadbeef->conf_get_int (CONFSTR_FB_SHOW_TREE_LINES,     FALSE);
     CONFIG_WIDTH                = deadbeef->conf_get_int (CONFSTR_FB_WIDTH,               220);
+    CONFIG_SHOW_COVERART        = deadbeef->conf_get_int (CONFSTR_FB_SHOW_COVERART,       TRUE);
     CONFIG_COVERART_SIZE        = deadbeef->conf_get_int (CONFSTR_FB_COVERART_SIZE,       24);
     CONFIG_COVERART_SCALE       = deadbeef->conf_get_int (CONFSTR_FB_COVERART_SCALE,      TRUE);
     CONFIG_SAVE_TREEVIEW        = deadbeef->conf_get_int (CONFSTR_FB_SAVE_TREEVIEW,       TRUE);
@@ -374,6 +368,7 @@ load_config (void)
         "show_icons:        %d \n"
         "tree_lines:        %d \n"
         "width:             %d \n"
+        "show_coverart:     %s \n"
         "coverart:          %s \n"
         "coverart_size:     %d \n"
         "coverart_scale:    %d \n"
@@ -402,6 +397,7 @@ load_config (void)
         CONFIG_SHOW_ICONS,
         CONFIG_SHOW_TREE_LINES,
         CONFIG_WIDTH,
+        CONFIG_SHOW_COVERART,
         CONFIG_COVERART,
         CONFIG_COVERART_SIZE,
         CONFIG_COVERART_SCALE,
@@ -543,6 +539,7 @@ on_config_changed (uintptr_t ctx)
     gboolean    show_icons      = CONFIG_SHOW_ICONS;
     gboolean    tree_lines      = CONFIG_SHOW_TREE_LINES;
     gint        width           = CONFIG_WIDTH;
+    gboolean    show_coverart   = CONFIG_SHOW_COVERART;
     gint        coverart_size   = CONFIG_COVERART_SIZE;
     gboolean    coverart_scale  = CONFIG_COVERART_SCALE;
     gint        icon_size       = CONFIG_ICON_SIZE;
@@ -599,10 +596,11 @@ on_config_changed (uintptr_t ctx)
                 (filter_enabled && (filter_auto != CONFIG_FILTER_AUTO)) ||
                 (show_bookmarks != CONFIG_SHOW_BOOKMARKS) ||
                 (show_icons != CONFIG_SHOW_ICONS) ||
-                (tree_lines != CONFIG_SHOW_TREE_LINES) ||
-                (show_icons && (coverart_size != CONFIG_COVERART_SIZE)) ||
-                (show_icons && (coverart_scale != CONFIG_COVERART_SCALE)) ||
                 (show_icons && (icon_size != CONFIG_ICON_SIZE)) ||
+                (show_coverart != CONFIG_SHOW_COVERART) ||
+                (show_coverart && (coverart_size != CONFIG_COVERART_SIZE)) ||
+                (show_coverart && (coverart_scale != CONFIG_COVERART_SCALE)) ||
+                (tree_lines != CONFIG_SHOW_TREE_LINES) ||
                 (sort_treeview != CONFIG_SORT_TREEVIEW))
             do_update = TRUE;
 
@@ -1471,16 +1469,17 @@ create_settings_dialog ()
 
     GtkWidget *frame_icons          = gtk_frame_new (_(" Folder icons  "));
     GtkWidget *grid_icons           = gtk_grid_new ();
-    GtkWidget *check_show_icons     = gtk_check_button_new_with_mnemonic (_("Show folder/coverart _icons"));
+    GtkWidget *check_show_icons     = gtk_check_button_new_with_mnemonic (_("Show folder/file _icons"));
     GtkWidget *lbl_icon_size        = gtk_label_new (_("Icon size:  "));
-    GtkWidget *spin_icon_size       = gtk_spin_button_new_with_range (16, 48, 2);
+    GtkWidget *spin_icon_size       = gtk_spin_button_new_with_range (24, 48, 2);
 
     GtkWidget *frame_coverart       = gtk_frame_new (_(" Coverart  "));
     GtkWidget *grid_coverart        = gtk_grid_new ();
+    GtkWidget *check_show_coverart  = gtk_check_button_new_with_mnemonic (_("Show _coverart icons"));
     GtkWidget *lbl_coverart         = gtk_label_new (_("Coverart images:  "));
     GtkWidget *entry_coverart       = gtk_entry_new ();
     GtkWidget *lbl_coverart_size    = gtk_label_new (_("Coverart size:  "));
-    GtkWidget *spin_coverart_size   = gtk_spin_button_new_with_range (16, 48, 2);
+    GtkWidget *spin_coverart_size   = gtk_spin_button_new_with_range (24, 48, 2);
     GtkWidget *check_coverart_scale = gtk_check_button_new_with_mnemonic (_("_Scale coverart to fixed width (make icons square)"));
 
     GtkWidget *frame_tree            = gtk_frame_new (_(" Tree view  "));
@@ -1490,8 +1489,8 @@ create_settings_dialog ()
 
     GtkWidget *frame_colors          = gtk_frame_new (_(" Font & Colors  "));
     GtkWidget *grid_colors           = gtk_grid_new ();
-    GtkWidget *lbl_font_size         = gtk_label_new (_("Font size:  "));
-    GtkWidget *spin_font_size        = gtk_spin_button_new_with_range (6, 24, 1);
+    GtkWidget *lbl_font_size         = gtk_label_new (_("Font size (0=default):  "));
+    GtkWidget *spin_font_size        = gtk_spin_button_new_with_range (0, 24, 1);
     GtkWidget *lbl_color_bg          = gtk_label_new (_("Background color (normal):  "));
     GtkWidget *button_color_bg       = gtk_color_button_new ();
     GtkWidget *lbl_color_fg          = gtk_label_new (_("Foreground color (normal):  "));
@@ -1516,8 +1515,9 @@ create_settings_dialog ()
     gtk_widget_set_tooltip_text (entry_filter,           _("Enter a list of file extensions (separated by semicolon) to be shown in the treeview."));
     gtk_widget_set_tooltip_text (check_show_bookmarks,   _("Show GTK bookmarks on top of the treeview. These bookmarks are shared with other applications, e.g. file browsers."));
     gtk_widget_set_tooltip_text (entry_bookmarks_file,   _("Show user-defined bookmarks on top of the treeview. These bookmarks are stored in the given file, and are not shared with other applications by default."));
-    gtk_widget_set_tooltip_text (check_show_icons,       _("Show folder/file icons in the treeview. Thhis also affects coverart icons."));
+    gtk_widget_set_tooltip_text (check_show_icons,       _("Show folder/file icons in the treeview. This applies to icons in general, including coverart."));
     gtk_widget_set_tooltip_text (spin_icon_size,         _("Set the size for folder/file icons. Note that coverart icons can be set to a different size."));
+    gtk_widget_set_tooltip_text (check_show_coverart,     _("Show coverart icons in the treeview. Default icons are used if this feature is disabled."));
     gtk_widget_set_tooltip_text (entry_coverart,         _("Enter a list of coverart images to search (separated by semicolon). The first matching file that is found inside a directory will be used as coverart icon."));
     gtk_widget_set_tooltip_text (spin_coverart_size,     _("Set the size for coverart icons."));
     gtk_widget_set_tooltip_text (check_coverart_scale,   _("If enabled, coverart icons will be scaled and padded if necessary to generate a square icon. If disabled, coverart icons can be wider than normal if the original image is non-square."));
@@ -1706,17 +1706,20 @@ create_settings_dialog ()
     gtk_container_add (GTK_CONTAINER (frame_coverart), grid_coverart);
     gtk_box_pack_start (GTK_BOX (page4), frame_coverart, FALSE, TRUE, 0);
 
+    // CONFIG_SHOW_COVERART
+    gtk_grid_attach (GTK_GRID (grid_coverart), check_show_coverart, 0, 0, 2, 1);
+
     // CONFIG_COVERART
-    gtk_grid_attach (GTK_GRID (grid_coverart), lbl_coverart, 0, 0, 1, 1);
-    gtk_grid_attach (GTK_GRID (grid_coverart), entry_coverart, 1, 0, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_coverart), lbl_coverart, 0, 1, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_coverart), entry_coverart, 1, 1, 1, 1);
     gtk_widget_set_hexpand (entry_coverart, TRUE);
 
     // CONFIG_COVERART_SIZE
-    gtk_grid_attach (GTK_GRID (grid_coverart), lbl_coverart_size, 0, 1, 1, 1);
-    gtk_grid_attach (GTK_GRID (grid_coverart), spin_coverart_size, 1, 1, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_coverart), lbl_coverart_size, 0, 2, 1, 1);
+    gtk_grid_attach (GTK_GRID (grid_coverart), spin_coverart_size, 1, 2, 1, 1);
 
     // CONFIG_COVERART_SCALE
-    gtk_grid_attach (GTK_GRID (grid_coverart), check_coverart_scale, 0, 2, 2, 1);
+    gtk_grid_attach (GTK_GRID (grid_coverart), check_coverart_scale, 0, 3, 2, 1);
 
 
     // page 5
@@ -1790,6 +1793,7 @@ create_settings_dialog ()
         gtk_entry_set_text (GTK_ENTRY (entry_bookmarks_file), CONFIG_BOOKMARKS_FILE);
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_show_icons), CONFIG_SHOW_ICONS);
         gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_icon_size), CONFIG_ICON_SIZE);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_show_coverart), CONFIG_SHOW_COVERART);
         gtk_entry_set_text (GTK_ENTRY (entry_coverart), CONFIG_COVERART);
         gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_coverart_size), CONFIG_COVERART_SIZE);
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check_coverart_scale), CONFIG_COVERART_SCALE);
@@ -1845,6 +1849,7 @@ create_settings_dialog ()
         CONFIG_BOOKMARKS_FILE       = g_strdup (gtk_entry_get_text (GTK_ENTRY (entry_bookmarks_file)));
         CONFIG_SHOW_ICONS           = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_show_icons));
         CONFIG_ICON_SIZE            = gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_icon_size));
+        CONFIG_SHOW_COVERART        = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_show_coverart));
         CONFIG_COVERART             = g_strdup (gtk_entry_get_text (GTK_ENTRY (entry_coverart)));
         CONFIG_COVERART_SIZE        = gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_coverart_size));
         CONFIG_COVERART_SCALE       = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check_coverart_scale));
@@ -2251,11 +2256,15 @@ get_icon_for_uri (gchar *uri)
         return icon;
     }
 
-    // Check for cover art in folder, otherwise use default icon
-    gchar **coverart = g_strsplit (CONFIG_COVERART, ";", 0);
-    for (gint i = 0; coverart[i] && ! icon; i++)
-        icon = get_icon_from_cache (uri, coverart[i]);
-    g_strfreev (coverart);
+    if (CONFIG_SHOW_COVERART)
+    {
+        // Check for cover art in folder, otherwise use default icon
+        gchar **coverart = g_strsplit (CONFIG_COVERART, ";", 0);
+        for (gint i = 0; coverart[i] && ! icon; i++)
+            icon = get_icon_from_cache (uri, coverart[i]);
+
+        g_strfreev (coverart);
+    }
 
     // Fallback to default icon
     if (! icon)
@@ -3770,6 +3779,7 @@ static const char settings_dlg[] =
     "property \"Show tree lines\"               checkbox "              CONFSTR_FB_SHOW_TREE_LINES      " 0 ;\n"
     "property \"Font size: \"                   spinbtn[0,32,1] "       CONFSTR_FB_FONT_SIZE            " 0 ;\n"
     "property \"Icon size (non-coverart): \"    spinbtn[24,48,2] "      CONFSTR_FB_ICON_SIZE            " 24 ;\n"
+    "property \"Show coverart icons: \"         checkbox "              CONFSTR_FB_SHOW_COVERART        " 1 ;\n"
     "property \"Coverart size: \"               spinbtn[24,48,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
     "property \"Filter for coverart files: \"   entry "                 CONFSTR_FB_COVERART             " \"" DEFAULT_FB_COVERART       "\" ;\n"
     "property \"Sidebar width: \"               spinbtn[150,300,1] "    CONFSTR_FB_WIDTH                " 200 ;\n"

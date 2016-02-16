@@ -40,6 +40,7 @@
 #define     CONFSTR_FB_SHOW_ICONS           "filebrowser.showicons"
 #define     CONFSTR_FB_SHOW_TREE_LINES      "filebrowser.treelines"
 #define     CONFSTR_FB_WIDTH                "filebrowser.sidebar_width"
+#define     CONFSTR_FB_SHOW_COVERART        "filebrowser.show_coverart"
 #define     CONFSTR_FB_COVERART             "filebrowser.coverart_files"
 #define     CONFSTR_FB_COVERART_SIZE        "filebrowser.coverart_size"
 #define     CONFSTR_FB_COVERART_SCALE       "filebrowser.coverart_scale"
