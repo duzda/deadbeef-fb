@@ -2,7 +2,7 @@
     Filebrowser plugin for the DeaDBeeF audio player
     http://sourceforge.net/projects/deadbeef-fb/
 
-    Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>
+    Copyright (C) 2011-2016 Jan D. Behrens <zykure@web.de>
 
     With contributions by:
         Tobias Bengfort <tobias.bengfort@posteo.de>
@@ -74,6 +74,7 @@
 #define trace(...)
 #endif
 
+#define ICON_SIZE(s)  ( (s) < 24 ? (24) : (s) )  // size < 24 crashes plugin?
 
 /*------------------*/
 /* GLOBAL VARIABLES */
@@ -2154,8 +2155,10 @@ static GdkPixbuf *
 get_icon_from_cache (const gchar *uri, const gchar *coverart)
 {
     GdkPixbuf *icon = NULL;
+    int size = ICON_SIZE (CONFIG_COVERART_SIZE);
+
     gchar *iconfile  = g_strconcat (uri, G_DIR_SEPARATOR_S, coverart, NULL);
-    gchar *cachefile = utils_make_cache_path (uri, CONFIG_COVERART_SIZE, CONFIG_COVERART_SCALE);
+    gchar *cachefile = utils_make_cache_path (uri, size, CONFIG_COVERART_SCALE);
 
     if (g_file_test (iconfile, G_FILE_TEST_EXISTS))
     {
@@ -2181,23 +2184,23 @@ get_icon_from_cache (const gchar *uri, const gchar *coverart)
             {
                 // get image from file, scaling it to requested size
                 GdkPixbuf *coverart = NULL;
-                coverart = gdk_pixbuf_new_from_file_at_scale (iconfile, CONFIG_COVERART_SIZE, CONFIG_COVERART_SIZE, TRUE, NULL);
+                coverart = gdk_pixbuf_new_from_file_at_scale (iconfile, size, size, TRUE, NULL);
 
                 // create square icon and put the down-scaled image in it
                 int bps = gdk_pixbuf_get_bits_per_sample (coverart);
                 int w = gdk_pixbuf_get_width (coverart);
                 int h = gdk_pixbuf_get_height (coverart);
-                int x = (CONFIG_COVERART_SIZE - w) / 2;
-                int y = (CONFIG_COVERART_SIZE - h) / 2;
+                int x = (size - w) / 2;
+                int y = (size - h) / 2;
 
-                icon = gdk_pixbuf_new (GDK_COLORSPACE_RGB, TRUE, bps, CONFIG_COVERART_SIZE, CONFIG_COVERART_SIZE);  // add alpha channel
+                icon = gdk_pixbuf_new (GDK_COLORSPACE_RGB, TRUE, bps, size, size);  // add alpha channel
                 gdk_pixbuf_fill (icon, 0x00000000);  // make icon transparent
                 gdk_pixbuf_copy_area (coverart, 0, 0, w, h, icon, x, y);
                 g_object_unref (coverart);
             }
             else
             {
-                icon = gdk_pixbuf_new_from_file_at_scale (iconfile, -1, CONFIG_COVERART_SIZE, TRUE, NULL);  // do not constrain width
+                icon = gdk_pixbuf_new_from_file_at_scale (iconfile, -1, size, TRUE, NULL);  // do not constrain width
             }
 
             GError *err = NULL;
@@ -2223,6 +2226,7 @@ get_icon_for_uri (gchar *uri)
         return NULL;
 
     GdkPixbuf *icon = NULL;
+    int size = ICON_SIZE (CONFIG_ICON_SIZE);
 
     if (! g_file_test (uri, G_FILE_TEST_IS_DIR))
     {
@@ -2235,14 +2239,14 @@ get_icon_for_uri (gchar *uri)
         icon_name    = g_content_type_get_generic_icon_name (content_type);
         icon_theme   = gtk_icon_theme_get_default ();
 
-        icon = gtk_icon_theme_load_icon (icon_theme, icon_name, CONFIG_ICON_SIZE, GTK_ICON_LOOKUP_FORCE_SIZE, NULL);
+        icon = gtk_icon_theme_load_icon (icon_theme, icon_name, size, GTK_ICON_LOOKUP_FORCE_SIZE, NULL);
 
         g_free (content_type);
         g_free (icon_name);
 #endif
         // Fallback to default icon
         if (! icon)
-            icon = utils_pixbuf_from_stock ("gtk-file", CONFIG_ICON_SIZE);
+            icon = utils_pixbuf_from_stock ("gtk-file", size);
 
         return icon;
     }
@@ -2255,7 +2259,7 @@ get_icon_for_uri (gchar *uri)
 
     // Fallback to default icon
     if (! icon)
-        icon = utils_pixbuf_from_stock ("folder", CONFIG_ICON_SIZE);
+        icon = utils_pixbuf_from_stock ("folder", size);
 
     return icon;
 }
@@ -2590,8 +2594,10 @@ treebrowser_load_bookmarks_helper (const gchar *filename)
                 if (g_file_test (path_full, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR))
                 {
                     gtk_tree_store_prepend (treestore, &iter, NULL);
-                    icon = CONFIG_SHOW_ICONS ?
-                                    utils_pixbuf_from_stock ("user-bookmarks", CONFIG_ICON_SIZE) : NULL;
+                    icon = NULL;
+                    if (CONFIG_SHOW_ICONS)
+                        icon = utils_pixbuf_from_stock ("user-bookmarks", ICON_SIZE (CONFIG_ICON_SIZE));
+
                     gtk_tree_store_set (treestore, &iter,
                                     TREEBROWSER_COLUMN_ICON,    icon,
                                     TREEBROWSER_COLUMN_NAME,    basename,
@@ -3763,8 +3769,8 @@ static const char settings_dlg[] =
                                                "checkbox "              CONFSTR_FB_SORT_TREEVIEW        " 1 ;\n"
     "property \"Show tree lines\"               checkbox "              CONFSTR_FB_SHOW_TREE_LINES      " 0 ;\n"
     "property \"Font size: \"                   spinbtn[0,32,1] "       CONFSTR_FB_FONT_SIZE            " 0 ;\n"
-    "property \"Icon size (non-coverart): \"    spinbtn[16,32,2] "      CONFSTR_FB_ICON_SIZE            " 24 ;\n"
-    "property \"Coverart size: \"               spinbtn[16,32,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
+    "property \"Icon size (non-coverart): \"    spinbtn[24,48,2] "      CONFSTR_FB_ICON_SIZE            " 24 ;\n"
+    "property \"Coverart size: \"               spinbtn[24,48,2] "      CONFSTR_FB_COVERART_SIZE        " 24 ;\n"
     "property \"Filter for coverart files: \"   entry "                 CONFSTR_FB_COVERART             " \"" DEFAULT_FB_COVERART       "\" ;\n"
     "property \"Sidebar width: \"               spinbtn[150,300,1] "    CONFSTR_FB_WIDTH                " 200 ;\n"
     "property \"Save treeview over sessions (restore previously expanded items)\" "

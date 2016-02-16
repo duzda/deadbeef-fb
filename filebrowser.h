@@ -2,7 +2,7 @@
     Filebrowser plugin for the DeaDBeeF audio player
     http://sourceforge.net/projects/deadbeef-fb/
 
-    Copyright (C) 2011-2015 Jan D. Behrens <zykure@web.de>
+    Copyright (C) 2011-2016 Jan D. Behrens <zykure@web.de>
 
     Based on Geany treebrowser plugin:
         treebrowser.c - v0.20
