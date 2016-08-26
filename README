@@ -1,18 +1,18 @@
 Filebrowser plugin for the DeaDBeeF audio player
 
-Available on SF.net and GitLab:
-    http://sourceforge.net/projects/deadbeef-fb/
+Available on GitLab and SourceForge:
     https://gitlab.com/zykure/deadbeef-fb
+    http://sourceforge.net/projects/deadbeef-fb/
 
 Binary and source releases for download:
     https://gitlab.com/zykure/deadbeef-fb/tree/release
-    https://sourceforge.net/projects/deadbeef-fb/files/ (outdated)
+    https://sourceforge.net/projects/deadbeef-fb/files/ [outdated]
 
 Please report bugs or post feature requests on GitLab:
     https://gitlab.com/zykure/deadbeef-fb/issues
 
 
-Copyright (C) 2011-2016 Jan D. Behrens <zykure@web.de>
+Copyright (C) 2011-2016 Jan D. Behrens <zykure42+deadbeef@gmail.com>
 
 Based on Geany treebrowser plugin:
     treebrowser.c - v0.20
@@ -22,6 +22,13 @@ Based on Geany treebrowser plugin:
 Check out the player itself here:
     http://deadbeef.sourceforge.net/
 
+An Arch Linux build of this plugin is available on AUR:
+    https://aur.archlinux.org/packages/deadbeef-plugin-fb/ [GTK2]
+    https://aur.archlinux.org/packages/deadbeef-plugin-fb-gtk3/ [GTK3]
+
+A Gentoo/Funtoo Linux build of this plugin is available on GitHub:
+    https://github.com/damex/deadbeef-overlay/tree/master/media-plugins/deadbeef-fb
+    Use with DeaDBeeF player overlay: https://github.com/damex/deadbeef-overlay
 
 ==========================================================
 
@@ -35,7 +42,7 @@ Check out the player itself here:
   GTK2/GTK3 headers (deadbeef-dev, libgtk2.0-dev, libgtk3.0-dev).
 
 * To get the sources from git, use the following commands:
-    First donwload:   git clone git://deadbeef-fb.git.sourceforge.net/gitroot/deadbeef-fb/deadbeef-fb
+    First donwload:   git clone https://gitlab.com/zykure/deadbeef-fb.git
     Update the tree:  git pull
 
 * Then just follow the instructions in the INSTALL file.
