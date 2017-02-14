@@ -3372,7 +3372,11 @@ on_treeview_mouseclick_press (GtkWidget *widget, GdkEventButton *event,
 
             // create new accel group to avoid conflicts with main window
             gtk_menu_set_accel_group (GTK_MENU (menu), gtk_accel_group_new ());
+#if GTK_CHECK_VERSION(3,22,0)
             gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
+#else
+            gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, event->button, event->time);
+#endif
 
             return TRUE;
         }

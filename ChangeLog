@@ -1,3 +1,87 @@
+commit 9ad84e1308d8429111760ff31802982aea504657
+Merge: 1562809 fd881f3
+Author: zykure <zykure42@gmail.com>
+Date:   Tue Feb 14 16:22:23 2017 +0000
+
+    Merge branch 'master' into 'master'
+    
+    gtk_menu_popup deprecated
+    
+    See merge request !5
+
+commit fd881f3e8a30f59a2636817e8314468aa0ea0203
+Author: Guillaume Castagnino <casta@xwing.info>
+Date:   Sat Dec 31 10:24:00 2016 +0100
+
+    gtk_menu_popup deprecated
+    
+    As of gtk-3.22, gtk_menu_popup is deprecated and compilation with it
+    generates an error.
+    The documentation provides replacement functions:
+    https://developer.gnome.org/gtk3/unstable/GtkMenu.html#gtk-menu-popup
+    
+    Here is my proposal, that seems to do the job.
+
+commit 156280934b790bf260f235522140013a64f9b9fd
+Author: zykure <zykure42@gmail.com>
+Date:   Fri Aug 26 06:51:16 2016 +0000
+
+    Update README
+
+commit ee4f6b3e280c7e985b04d463decc0545387ae7db
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Feb 16 09:20:51 2016 +0100
+
+    Add option to disable coverart icons
+
+commit 6e0a0aa8d2b56f608581ff0bc6fcd594d3f7669b
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Feb 16 09:11:17 2016 +0100
+
+    Ensure that icons are larger at least 24px, see #16
+
+commit 7785ff9c3f963a8dc54926485c0ce96ccdf81650
+Author: Jan Behrens <zykure@web.de>
+Date:   Fri Feb 12 18:57:05 2016 +0100
+
+    Fix GTK2 colors
+
+commit 971fa7567eb46fd3fa958bfd9a16541197e64fd7
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Feb 9 23:01:04 2016 +0100
+
+    Fix GTK3 version checks (gtk_label_set_xalign)
+
+commit d62b1f12e3aad34487d73dd5dc726fe5976fed74
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Feb 8 19:02:21 2016 +0100
+
+    Some more tweaking
+
+commit c88d415a78aa019b9518c9fb3df5416bfd66f5ec
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Feb 8 14:15:11 2016 +0100
+
+    Finally fix GTK3 colors (must override bg-image and borders as well... duh!)
+
+commit d60f09fcb3770c6a454f9b4ce6917c69387f0171
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Jan 19 23:45:35 2016 +0100
+
+    Improve keybindings, make ctrl work with double-click (see !4)
+
+commit e4e497993624b3469af917957c7f8625740488a7
+Author: Jan Behrens <zykure@web.de>
+Date:   Tue Jan 19 10:47:14 2016 +0100
+
+    Add rename option (GTK3 only), fixes #4
+
+commit 910cddea8284a60053ff6d20082daa261e4ba554
+Author: Jan Behrens <zykure@web.de>
+Date:   Mon Jan 18 23:37:55 2016 +0100
+
+    version bump
+
 commit ee572932cbca1a971e51c08b4b9e4e552e82e990
 Merge: 39192b3 0e65da7
 Author: Jan Behrens <zykure@web.de>
@@ -670,7 +754,7 @@ Date:   Sat Oct 12 16:57:59 2013 +0200
     Merge branch 'oldmaster'
     
     Conflicts:
-    	filebrowser.c
+            filebrowser.c
 
 commit 7da1ce0920ec7df105fa9d8bf6e469a166f5398c
 Author: Jan Behrens <zykure@web.de>

@@ -48,13 +48,13 @@ if HAVE_GTK2
 ddb_misc_filebrowser_GTK2_la_SOURCES = $(filebrowser_SOURCES)
 ddb_misc_filebrowser_GTK2_la_LDFLAGS = -module
 ddb_misc_filebrowser_GTK2_la_LIBADD  = $(LDADD) $(GTK2_DEPS_LIBS)
-ddb_misc_filebrowser_GTK2_la_CFLAGS  = -std=c99 $(GTK2_DEPS_CFLAGS) $(EXTRA_FLAGS) $(VERSION_FLAGS)
+ddb_misc_filebrowser_GTK2_la_CFLAGS  = -pipe -std=c99 $(GTK2_DEPS_CFLAGS) $(EXTRA_FLAGS) $(VERSION_FLAGS)
 endif
 if HAVE_GTK3
 ddb_misc_filebrowser_GTK3_la_SOURCES = $(filebrowser_SOURCES)
 ddb_misc_filebrowser_GTK3_la_LDFLAGS = -module
 ddb_misc_filebrowser_GTK3_la_LIBADD  = $(LDADD) $(GTK3_DEPS_LIBS)
-ddb_misc_filebrowser_GTK3_la_CFLAGS  = -std=c99 $(GTK3_DEPS_CFLAGS) $(EXTRA_FLAGS) $(VERSION_FLAGS)
+ddb_misc_filebrowser_GTK3_la_CFLAGS  = -pipe -std=c99 $(GTK3_DEPS_CFLAGS) $(EXTRA_FLAGS) $(VERSION_FLAGS)
 endif
 
 docsdir = $(docdir)
