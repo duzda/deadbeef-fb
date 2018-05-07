@@ -2188,31 +2188,40 @@ get_icon_from_cache (const gchar *uri, const gchar *coverart)
             if (CONFIG_COVERART_SCALE)
             {
                 // get image from file, scaling it to requested size
-                GdkPixbuf *coverart = NULL;
-                coverart = gdk_pixbuf_new_from_file_at_scale (iconfile, size, size, TRUE, NULL);
+                GdkPixbuf *coverart = gdk_pixbuf_new_from_file_at_scale (iconfile, size, size, TRUE, NULL);
+                if (coverart)
+                {
+                    // create square icon and put the down-scaled image in it
+                    int bps = gdk_pixbuf_get_bits_per_sample (coverart);
+                    int w = gdk_pixbuf_get_width (coverart);
+                    int h = gdk_pixbuf_get_height (coverart);
+                    int x = (size - w) / 2;
+                    int y = (size - h) / 2;
 
-                // create square icon and put the down-scaled image in it
-                int bps = gdk_pixbuf_get_bits_per_sample (coverart);
-                int w = gdk_pixbuf_get_width (coverart);
-                int h = gdk_pixbuf_get_height (coverart);
-                int x = (size - w) / 2;
-                int y = (size - h) / 2;
-
-                icon = gdk_pixbuf_new (GDK_COLORSPACE_RGB, TRUE, bps, size, size);  // add alpha channel
-                gdk_pixbuf_fill (icon, 0x00000000);  // make icon transparent
-                gdk_pixbuf_copy_area (coverart, 0, 0, w, h, icon, x, y);
-                g_object_unref (coverart);
+                    icon = gdk_pixbuf_new (GDK_COLORSPACE_RGB, TRUE, bps, size, size);  // add alpha channel
+                    gdk_pixbuf_fill (icon, 0x00000000);  // make icon transparent
+                    gdk_pixbuf_copy_area (coverart, 0, 0, w, h, icon, x, y);
+                    g_object_unref (coverart);
+                }
             }
             else
             {
                 icon = gdk_pixbuf_new_from_file_at_scale (iconfile, -1, size, TRUE, NULL);  // do not constrain width
             }
 
-            GError *err = NULL;
-            if (! gdk_pixbuf_save (icon, cachefile, "png", &err, NULL))
+            if (icon)
             {
-                fprintf (stderr, "Could not cache coverart image %s: %s\n", iconfile, err->message);
-                g_error_free (err);
+                GError *err = NULL;
+                gdk_pixbuf_save (icon, cachefile, "png", &err, NULL);
+                if (err)
+                {
+                    fprintf (stderr, "Could not cache coverart image %s: %s\n", iconfile, err->message);
+                    g_error_free (err);
+                }
+            }
+            else
+            {
+                fprintf (stderr, "Coverart image is corrupted: %s\n", iconfile);
             }
         }
     }
