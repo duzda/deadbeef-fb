@@ -1,3 +1,50 @@
+commit beaf1a001f6adc64ba2efb093fee73192f8652a1
+Author: duzda <duzda666@gmail.com>
+Date:   Fri Apr 8 18:23:04 2022 +0200
+
+    typos
+
+commit 154c63086a1fb62d4508353a1ba89ac439d385c4
+Author: duzda <duzda666@gmail.com>
+Date:   Fri Apr 8 18:08:55 2022 +0200
+
+    bigger minimum expand character limit
+
+commit 4510a330590fb41db5222aabf0815cc169506624
+Author: duzda <duzda666@gmail.com>
+Date:   Fri Apr 8 18:05:41 2022 +0200
+
+    added collapse all button
+
+commit 4c0aaa2db3393babd91bd3973176c73d88da0673
+Author: duzda <duzda666@gmail.com>
+Date:   Fri Apr 8 17:47:45 2022 +0200
+
+    fix: compile error
+
+commit 355e6142606270e7ae0fd68d8fcdb3f1ada295ca
+Merge: 47bc3fe ca06166
+Author: zykure <zykure@protonmail.com>
+Date:   Mon May 7 17:10:10 2018 +0000
+
+    Merge branch 'master' into 'master'
+    
+    Fix corrupted coverarts crashing deadbeef (#19)
+    
+    See merge request zykure/deadbeef-fb!6
+
+commit ca061662b68cb502dc8e863b1160b7ea92ee4919
+Author: Dante <dsdante@protonmail.com>
+Date:   Sat Apr 28 19:15:37 2018 +0300
+
+    Fix corrupted coverarts crashing deadbeef (#19)
+
+commit 47bc3fe0fe151dfbb75f90f9e4d5e9a7affd280a
+Author: Jan Behrens <zykure42@gmail.com>
+Date:   Tue Feb 14 17:32:20 2017 +0100
+
+    gtk_menu_popup_at_pointer is availabe in gtk>=3.22
+
 commit 9ad84e1308d8429111760ff31802982aea504657
 Merge: 1562809 fd881f3
 Author: zykure <zykure42@gmail.com>

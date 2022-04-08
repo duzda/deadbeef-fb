@@ -38,8 +38,8 @@ endif
 # normal lib
 if DEBUG
 EXTRA_FLAGS = -g3 -ggdb -Wall
-else
-EXTRA_FLAGS = -Werror
+#else
+#EXTRA_FLAGS = -Werror
 endif
 
 VERSION_FLAGS = -DPLUGIN_VERSION_MAJOR=$(shell cat version | cut -d . -f 1) -DPLUGIN_VERSION_MINOR=$(shell cat version | cut -d . -f 2)
