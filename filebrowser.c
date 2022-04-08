@@ -3798,7 +3798,7 @@ static const char settings_dlg[] =
     "property \"Search delay (do not update tree while typing)\" "
                                                "spinbtn[100,5000,100] " CONFSTR_FB_SEARCH_DELAY         " 1000 ;\n"
     "property \"Wait for N chars until full search (fully expand tree)\" "
-                                               "spinbtn[1,10,1]       " CONFSTR_FB_FULLSEARCH_WAIT      " 5 ;\n"
+                                               "spinbtn[1,255,1]       " CONFSTR_FB_FULLSEARCH_WAIT      " 5 ;\n"
     "property \"Sort contents by name (otherwise by modification date) \" "
                                                "checkbox "              CONFSTR_FB_SORT_TREEVIEW        " 1 ;\n"
     "property \"Show tree lines\"               checkbox "              CONFSTR_FB_SHOW_TREE_LINES      " 0 ;\n"
