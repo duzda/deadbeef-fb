@@ -174,6 +174,7 @@ static void         on_button_refresh (void);
 static void         on_button_go_up (void);
 static void         on_button_go_home (void);
 static void         on_button_go_default (void);
+static void         on_button_collapse_all (void);
 static void         on_addressbar_changed (void);
 static void         on_searchbar_changed (void);
 #if !GTK_CHECK_VERSION(3,6,0)

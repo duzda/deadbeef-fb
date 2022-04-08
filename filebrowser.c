@@ -1182,7 +1182,7 @@ create_sidebar (void)
     gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (wid), "gtk-go-previous");
     gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (wid), _("Collapse all"));
     g_signal_connect (wid, "clicked", G_CALLBACK (on_button_collapse_all), NULL);
-    gtk_container_add (GTK_CONTAINER (sidebar_toolbar, wid);
+    gtk_container_add (GTK_CONTAINER (sidebar_toolbar), wid);
 
     wid = GTK_WIDGET (gtk_tool_item_new ());
     gtk_tool_item_set_expand (GTK_TOOL_ITEM (wid), TRUE);
