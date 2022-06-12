@@ -940,6 +940,10 @@ create_popup_menu (GtkTreePath *path, gchar *name, GList *uri_list)
     item = gtk_separator_menu_item_new ();
     gtk_container_add (GTK_CONTAINER (menu), item);
 
+    item = gtk_menu_item_new_with_mnemonic (_("Open containing _folder"));
+    gtk_container_add ( GTK_CONTAINER (menu), item);
+    g_signal_connect (item, "activate", G_CALLBACK (on_menu_open_containing_folder), uri);
+
     item = gtk_menu_item_new_with_mnemonic (_("Enter _directory"));
     gtk_container_add (GTK_CONTAINER (menu), item);
     g_signal_connect (item, "activate", G_CALLBACK (on_menu_enter_directory), uri);
@@ -2750,6 +2754,17 @@ static void
 on_menu_add_new (GtkMenuItem *menuitem, GList *uri_list)
 {
     add_uri_to_playlist (uri_list, PLT_NEW, TRUE, TRUE);
+}
+
+static void
+on_menu_open_containing_folder (GtkMenuItem *menuitem, gchar *uri)
+{
+    GError *error = NULL;
+    gchar *realuri = g_strconcat("file:///", uri, NULL);
+    if (!g_app_info_launch_default_for_uri (realuri, NULL, &error)) {
+        g_warning ("Failed to open uri: %s", error->message);
+    }
+    g_free(realuri);
 }
 
 static void

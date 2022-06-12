@@ -150,6 +150,7 @@ static void         on_menu_add (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_add_current (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_replace_current (GtkMenuItem *menuitem, GList *uri_list);
 static void         on_menu_add_new (GtkMenuItem *menuitem, GList *uri_list);
+static void         on_menu_open_containing_folder (GtkMenuItem *menuItem, gchar *uri);
 static void         on_menu_enter_directory (GtkMenuItem *menuitem, gchar *uri);
 static void         on_menu_go_up (GtkMenuItem *menuitem, gpointer *user_data);
 static void         on_menu_refresh (GtkMenuItem *menuitem, gpointer *user_data);
